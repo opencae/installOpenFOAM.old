@@ -1,0 +1,59 @@
+#!/bin/sh
+
+module purge
+
+case $COMPILER_TYPE in
+    ThirdParty)
+	;;
+    system)
+	case "$COMPILER" in
+	    Gcc4_8_5)
+		module load gcc/4.8.5
+		;;
+	    Gcc4_9_4)
+		module load gcc/4.9.4
+		;;
+	    Icc2017_1_132*)
+		module load intel/2017.1.132
+		;;
+	    Icc2017_2_174*)
+		module load intel/2017.2.174
+		;;
+	    Icc2017_3_191*)
+		module load intel/2017.3.191
+		;;
+	    Icc2017_4_196*)
+		module load intel/2017.4.196
+		;;
+	    *)
+		;;
+	esac	
+	;;
+    *)
+	;;
+esac
+
+module unload impi
+
+case $MPLIB in
+    INTELMPI2017_1_132)
+	module load impi/2017.1.132
+	;;
+    INTELMPI2017_2_174)
+	module load impi/2017.2.174
+	;;
+    INTELMPI2017_2_191)
+	module load impi/2017.2.191
+	;;
+    INTELMPI2017_3_196)
+	module load impi/2017.3.196
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    INTELMPI*)
+	export MPI_ROOT=$I_MPI_ROOT
+	;;
+esac

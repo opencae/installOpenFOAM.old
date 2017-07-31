@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# OpenFOAM install directory
+FOAM_INST_DIR=${HOME}/OpenFOAM
+
+# Build ParaView
+unset BUILD_PARAVIEW
+#BUILD_PARAVIEW=yes
+
+# Download Only
+unset DOWNLOAD_ONLY
+#DOWNLOAD_ONLY=yes
+
+# Build foamyHexMesh
+unset BUILD_FOAMY_HEX_MESH
+#BUILD_FOAMY_HEX_MESH=yes
+
+# Number of processors
+export WM_NCOMPPROCS=1
+
+# OpenFOAM version list to install
+OpenFOAM_BUILD_OPTION_LIST=(
+OpenFOAM_VERSION=OpenFOAM-v1612+,COMPILER_TYPE=ThirdParty,COMPILER=Gcc4_8_5,COMPILE_OPTION=Opt,ARCH_OPTION=64,PRECISION_OPTION=DP,LABEL_SIZE=32,MPLIB=SYSTEMOPENMPI
+)

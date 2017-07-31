@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# URL
+openfoam_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE#*-}
+    
+    case "${PACKAGE}" in
+	OpenFOAM-v*)
+	    echo "https://sourceforge.net/projects/openfoamplus/files/${VERSION}/${PACKAGE}.tgz"
+	    ;;
+	OpenFOAM-*)
+	    echo "http://dl.openfoam.org/source/${VERSION//./-}"
+	    ;;
+    esac
+}
+
+thirdparty_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE#*-}
+    
+    case "${PACKAGE}" in
+	ThirdParty-v*)
+	    echo "https://sourceforge.net/projects/openfoamplus/files/${VERSION}/${PACKAGE}.tgz"
+	    ;;
+	ThirdParty-*)
+	    echo "http://dl.openfoam.org/third-party/${VERSION//./-}"
+	    ;;
+    esac
+}
+
+gcc_url()
+{
+    local PACKAGE=$1
+    if [ "$PACKAGE" = "gcc-6.4.0" ]
+    then
+	echo http://ftp.tsukuba.wide.ad.jp/software/gcc/releases/${PACKAGE}/${PACKAGE}.tar.xz
+    else
+	echo http://ftp.tsukuba.wide.ad.jp/software/gcc/releases/${PACKAGE}/${PACKAGE}.tar.bz2
+    fi
+}
+
+gmp_url()
+{
+    local PACKAGE=$1
+    echo http://ftp.gnu.org/gnu/gmp/${PACKAGE}.tar.bz2
+}
+
+mpfr_url()
+{
+    local PACKAGE=$1
+    echo http://ftp.gnu.org/gnu/mpfr/${PACKAGE}.tar.bz2
+}
+
+mpc_url()
+{
+    local PACKAGE=$1
+    echo http://www.multiprecision.org/mpc/download/${PACKAGE}.tar.gz
+}
+
+cgal_url()
+{
+    local PACKAGE=$1
+    if [ "${PACKAGE}" = "CGAL-4.6" ]
+    then
+        echo https://gforge.inria.fr/frs/download.php/file/34703/${PACKAGE}.tar.bz2
+    else
+        echo https://github.com/CGAL/cgal/releases/download/releases/${PACKAGE}/${PACKAGE}.tar.xz
+    fi
+}
+
+boost_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE#boost_}
+    VERSION=${VERSION//_/.}
+    echo "http://downloads.sourceforge.net/project/boost/boost/${VERSION}/${PACKAGE}.tar.bz2?&use_mirror=jaist"
+}
+
+cmake_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    local MAJOR_VERSION=`echo ${VERSION} | cut -d '.' -f 1,2`
+    echo http://www.cmake.org/files/v${MAJOR_VERSION}/${PACKAGE}.tar.gz
+}
+
+openmpi_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    local MAJOR_VERSION=`echo ${VERSION} | cut -d '.' -f 1,2`
+    echo http://www.open-mpi.org/software/ompi/v${MAJOR_VERSION}/downloads/${PACKAGE}.tar.bz2
+}
+
+qt_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    local MAJOR_VERSION=`echo ${VERSION} | cut -d '.' -f 1,2`
+    if [ "${MAJOR_VERSION}" = "4.7" ];then
+	echo http://master.qt.io/archive/qt/${MAJOR_VERSION}/qt-everywhere-opensource-src-${VERSION}.tar.gz
+    else 
+	echo http://master.qt.io/official_releases/qt/${MAJOR_VERSION}/${VERSION}/qt-everywhere-opensource-src-${VERSION}.tar.gz
+    fi
+}
+
+python_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    echo https://www.python.org/ftp/python/${VERSION}/${PACKAGE}.tar.xz
+}
+
+fftw_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    echo http://www.fftw.org/fftw-${VERSION}.tar.gz
+}
+
+mesa_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    echo https://mesa.freedesktop.org/archive/${VERSION}/mesa-${VERSION}.tar.xz
+}

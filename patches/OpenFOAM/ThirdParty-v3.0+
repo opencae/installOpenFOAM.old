@@ -1,0 +1,87 @@
+--- ../orig/ThirdParty-v3.0+/etc/tools/ThirdPartyFunctions	2015-12-14 17:37:01.000000000 +0900
++++ ./etc/tools/ThirdPartyFunctions	2017-01-29 08:01:22.000000000 +0900
+@@ -38,19 +38,8 @@
+ #
+ # mostly building without wmake
+ # - disable wmakeScheduler variables
+-# - restrict WM_NCOMPPROCS to local number of cores
+ #
+ unset WM_HOSTS WM_SCHEDULER
+-export WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo 2>/dev/null | wc -l)
+-if [ $WM_NCOMPPROCS -le 1 ]
+-then
+-    WM_NCOMPPROCS=1
+-elif [ $WM_NCOMPPROCS -ge 8 ]
+-then
+-    WM_NCOMPPROCS=8
+-fi
+-# echo "Building on $WM_NCOMPPROCS cores"
+-
+ 
+ #
+ # download file $1 from url $2 into download/ directory
+--- ../orig/ThirdParty-v3.0+/makeCGAL	2015-12-14 17:36:57.000000000 +0900
++++ ./makeCGAL	2017-01-27 08:21:09.000000000 +0900
+@@ -40,9 +40,9 @@
+ set -x
+ 
+ cgalPACKAGE=CGAL-4.7
+-boostPACKAGE=boost-system
+-gmpPACKAGE=gmp-system
+-mpfrPACKAGE=mpfr-system
++boostPACKAGE=boost_1_55_0
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
+ 
+ #------------------------------------------------------------------------------
+ # run from third-party directory only
+--- ../orig/ThirdParty-v3.0+/makeGcc	2015-12-14 17:36:57.000000000 +0900
++++ ./makeGcc	2017-01-27 08:21:09.000000000 +0900
+@@ -29,10 +29,10 @@
+ #     Build script for gmp, mpfr and gcc-[4-9].?.?
+ #
+ #------------------------------------------------------------------------------
+-gmpPACKAGE=gmp-5.1.2
+-mpfrPACKAGE=mpfr-3.1.2
+-mpcPACKAGE=mpc-1.0.1
+-gccPACKAGE=
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
++mpcPACKAGE=mpc-1.0.3
++gccPACKAGE=gcc-6.3.0
+ 
+ #------------------------------------------------------------------------------
+ # Run from third-party directory only
+--- ../orig/ThirdParty-v3.0+/makeParaView	2015-12-14 17:36:57.000000000 +0900
++++ ./makeParaView	2017-01-27 08:21:09.000000000 +0900
+@@ -48,7 +48,7 @@
+ 
+ # MPI support:
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.
+--- ../orig/ThirdParty-v3.0+/makeParaView4	2015-12-14 17:36:57.000000000 +0900
++++ ./makeParaView4	2017-01-27 08:21:09.000000000 +0900
+@@ -48,7 +48,7 @@
+ 
+ # MPI support:
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.
+--- ../orig/ThirdParty-v3.0+/makeQt	2015-12-14 17:36:58.000000000 +0900
++++ ./makeQt	2017-01-27 08:21:09.000000000 +0900
+@@ -29,7 +29,7 @@
+ #     Build script for qt-everywhere-opensource-src
+ #
+ #------------------------------------------------------------------------------
+-qtVERSION=4.7.3
++qtVERSION=4.8.7
+ qtTYPE=qt-everywhere-opensource-src
+ #------------------------------------------------------------------------------
+ # run from third-party directory only

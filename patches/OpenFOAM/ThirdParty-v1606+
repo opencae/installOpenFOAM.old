@@ -1,0 +1,130 @@
+--- ../orig/ThirdParty-v1606+/00-ERRATA.txt	1970-01-01 00:00:00.000000000 +0000
++++ ./00-ERRATA.txt	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,7 @@
++This source pack includes a few minor configuration changes from the initial
++ThirdParty-v1606+ release (on 2016-07-01).
++
++2016-07-05
++- fixed file permissions on makeCGAL, minor correction for /bin/dash (ubuntu)
++- include FFTW 3.3.4 in the source pack
++
+--- ../orig/ThirdParty-v1606+/etc/tools/ThirdPartyFunctions	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/tools/ThirdPartyFunctions	1970-01-01 00:00:00.000000000 +0000
+@@ -39,18 +39,8 @@
+ #
+ # Mostly building without wmake
+ # - disable wmakeScheduler variables
+-# - use max number of cores for building
+ #
+ unset WM_HOSTS WM_SCHEDULER
+-if [ -r /proc/cpuinfo ]
+-then
+-    WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo | wc -l)
+-else
+-    WM_NCOMPPROCS=1
+-fi
+-export WM_NCOMPPROCS
+-# echo "Building on $WM_NCOMPPROCS cores"
+-
+ 
+ #
+ # If WM_CONTINUE_ON_ERROR not set activate the shell option "stop on error"
+--- ../orig/ThirdParty-v1606+/etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM-32Int32	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM-32Int32	1970-01-01 00:00:00.000000000 +0000
+@@ -3,10 +3,10 @@
+ OBJ		= .o
+ 
+ MAKE		= make
+-AR		= gcc
++AR		= $(CC)
+ ARFLAGS		= -m32 -shared -o
+ CAT		= cat
+-CCS		= gcc
++CCS		= $(CC)
+ CCP		= mpicc
+ CCD		= mpicc
+ CFLAGS		= -m32 -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -Drestrict=__restrict
+--- ../orig/ThirdParty-v1606+/etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM-64Int32	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM-64Int32	1970-01-01 00:00:00.000000000 +0000
+@@ -3,10 +3,10 @@
+ OBJ		= .o
+ 
+ MAKE		= make
+-AR		= gcc
++AR		= $(CC)
+ ARFLAGS		= -shared -o
+ CAT		= cat
+-CCS		= gcc
++CCS		= $(CC)
+ CCP		= mpicc
+ CCD		= mpicc
+ CFLAGS		= -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -Drestrict=__restrict
+--- ../orig/ThirdParty-v1606+/etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM-64Int64	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM-64Int64	1970-01-01 00:00:00.000000000 +0000
+@@ -3,10 +3,10 @@
+ OBJ		= .o
+ 
+ MAKE		= make
+-AR		= gcc
++AR		= $(CC)
+ ARFLAGS		= -shared -o
+ CAT		= cat
+-CCS		= gcc
++CCS		= $(CC)
+ CCP		= mpicc
+ CCD		= mpicc
+ CFLAGS		= -O3 -DINTSIZE64 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -Drestrict=__restrict
+--- ../orig/ThirdParty-v1606+/makeCGAL	1970-01-01 00:00:00.000000000 +0000
++++ ./makeCGAL	1970-01-01 00:00:00.000000000 +0000
+@@ -43,9 +43,9 @@
+ _foamSource $($WM_PROJECT_DIR/bin/foamEtcFile config.sh/CGAL)
+ _foamSource $($WM_PROJECT_DIR/bin/foamEtcFile config.sh/compiler)
+ 
+-boostPACKAGE=${boost_version:-boost-system}
+-gmpPACKAGE=${gmp_version:-gmp-system}
+-mpfrPACKAGE=${mpfr_version:-mpfr-system}
++boostPACKAGE=boost_1_61_0
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
+ cgalPACKAGE=$cgal_version
+ 
+ #------------------------------------------------------------------------------
+--- ../orig/ThirdParty-v1606+/makeGcc	1970-01-01 00:00:00.000000000 +0000
++++ ./makeGcc	1970-01-01 00:00:00.000000000 +0000
+@@ -48,10 +48,10 @@
+ . $WM_PROJECT_DIR/etc/config.sh/functions
+ _foamSource $($WM_PROJECT_DIR/bin/foamEtcFile config.sh/compiler)
+ 
+-gmpPACKAGE=${gmp_version:-gmp-system}
+-mpfrPACKAGE=${mpfr_version:-mpfr-system}
+-mpcPACKAGE=${mpc_version:-mpc-system}
+-gccPACKAGE=$gcc_version
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
++mpcPACKAGE=mpc-1.0.3
++gccPACKAGE=gcc-4.8.5
+ 
+ #------------------------------------------------------------------------------
+ # Run from third-party directory only
+--- ../orig/ThirdParty-v1606+/makeParaView	1970-01-01 00:00:00.000000000 +0000
++++ ./makeParaView	1970-01-01 00:00:00.000000000 +0000
+@@ -48,7 +48,7 @@
+ 
+ # MPI support:
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.
+--- ../orig/ThirdParty-v1606+/makeQt	1970-01-01 00:00:00.000000000 +0000
++++ ./makeQt	1970-01-01 00:00:00.000000000 +0000
+@@ -29,7 +29,7 @@
+ #     Build script for qt-everywhere-opensource-src
+ #
+ #------------------------------------------------------------------------------
+-qtVERSION=4.7.3
++qtVERSION=4.8.7
+ qtTYPE=qt-everywhere-opensource-src
+ #------------------------------------------------------------------------------
+ # run from third-party directory only

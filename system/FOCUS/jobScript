@@ -1,0 +1,8 @@
+#!/bin/bash
+#SBATCH -p f006m
+#SBATCH -n 1
+#SBATCH -J installOpenFOAM
+#SBATCH -e installOpenFOAM.e%J
+#SBATCH -o installOpenFOAM.o%J
+
+./install.sh >& log.install.sh.$SLURM_JOB_ID 

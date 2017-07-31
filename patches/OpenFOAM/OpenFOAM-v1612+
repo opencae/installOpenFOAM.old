@@ -1,0 +1,178 @@
+--- ../orig/OpenFOAM-v1612+/etc/config.sh/compiler	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/config.sh/compiler	1970-01-01 00:00:00.000000000 +0000
+@@ -30,41 +30,26 @@
+ #
+ #------------------------------------------------------------------------------
+ 
++# Default versions of GMP, MPFR and MPC, override as necessary
++gmp_version=gmp-6.1.0
++mpfr_version=mpfr-3.1.4
++mpc_version=mpc-1.0.3
++
+ case "$WM_COMPILER_TYPE" in
+ ThirdParty)
+-    # Default versions of GMP, MPFR and MPC, override as necessary
+-    gmp_version=gmp-system
+-    mpfr_version=mpfr-system
+-    mpc_version=mpc-system
+ 
+     case "$WM_COMPILER" in
+-    Gcc | Gcc48)
+-        gcc_version=gcc-4.8.5
+-        ;;
+-    Gcc49)
+-        gcc_version=gcc-4.9.3
+-        ;;
+-    Gcc51)
+-        gcc_version=gcc-5.1.0
+-        ;;
+-    Gcc52)
+-        gcc_version=gcc-5.2.0
+-        ;;
+-    Gcc53)
+-        gcc_version=gcc-5.3.0
+-        ;;
+-    Gcc54)
+-        gcc_version=gcc-5.4.0
+-        ;;
+-    Gcc61)
+-        gcc_version=gcc-6.1.0
+-        ;;
+-    Gcc62)
+-        gcc_version=gcc-6.2.0
+-        ;;
+-    Clang)
+-        clang_version=llvm-3.7.0
+-        # clang_version=llvm-3.8.0
++    Gcc*)
++        version=${WM_COMPILER#Gcc}
++        version=${version%KNL}
++        version=${version//_/.}
++        gcc_version=gcc-$version
++        ;;
++    Clang*)
++        version=${WM_COMPILER#Clang}
++        version=${version%KNL}
++        version=${version//_/.}
++        clang_version=llvm-$version
+         ;;
+     *)
+         echo 1>&2
+@@ -79,12 +64,12 @@
+ 
+ # common settings (system or ThirdParty)
+ case "$WM_COMPILER" in
+-Clang)
++Clang*)
+     # Using clang - not gcc
+     export WM_CC='clang'
+     export WM_CXX='clang++'
+     ;;
+-Icc)
++Icc*)
+     export WM_CC='icc'
+     export WM_CXX='icpc'
+     ;;
+--- ../orig/OpenFOAM-v1612+/etc/config.sh/mpi	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/config.sh/mpi	1970-01-01 00:00:00.000000000 +0000
+@@ -33,9 +33,9 @@
+ unset MPI_ARCH_PATH MPI_HOME FOAM_MPI_LIBBIN
+ 
+ case "$WM_MPLIB" in
+-SYSTEMOPENMPI)
++SYSTEMOPENMPI*)
+     # Use the system installed openmpi, get library directory via mpicc
+-    export FOAM_MPI=openmpi-system
++    export FOAM_MPI="$WM_MPLIB"
+ 
+     # Undefine OPAL_PREFIX if set to one of the paths on foamOldDirs
+     if [ -z "$($foamClean "$OPAL_PREFIX" "$foamOldDirs")" ]
+@@ -199,11 +199,11 @@
+     _foamAddLib     $MPI_ARCH_PATH/lib
+     ;;
+ 
+-SGIMPI)
++SGIMPI*)
+     # No trailing slash
+     [ "${MPI_ROOT%/}" = "${MPI_ROOT}" ] || MPI_ROOT="${MPI_ROOT%/}"
+ 
+-    export FOAM_MPI="${MPI_ROOT##*/}"
++    export FOAM_MPI="$WM_MPLIB"
+     export MPI_ARCH_PATH=$MPI_ROOT
+ 
+     if [ ! -d "$MPI_ROOT" -o -z "$MPI_ARCH_PATH" ]
+@@ -226,11 +226,11 @@
+     _foamAddLib     $MPI_ARCH_PATH/lib
+     ;;
+ 
+-INTELMPI)
++INTELMPI*)
+     # No trailing slash
+     [ "${MPI_ROOT%/}" = "${MPI_ROOT}" ] || MPI_ROOT="${MPI_ROOT%/}"
+ 
+-    export FOAM_MPI="${MPI_ROOT##*/}"
++    export FOAM_MPI="$WM_MPLIB"
+     export MPI_ARCH_PATH=$MPI_ROOT
+ 
+     if [ ! -d "$MPI_ROOT" -o -z "$MPI_ARCH_PATH" ]
+--- ../orig/OpenFOAM-v1612+/wmake/rules/General/general	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/General/general	1970-01-01 00:00:00.000000000 +0000
+@@ -14,7 +14,7 @@
+ GLIB_LIBS  =
+ 
+ 
+-COMPILER_TYPE   = $(shell echo $(WM_COMPILER) | tr -d [:digit:])
++COMPILER_TYPE   = $(shell echo $(WM_COMPILER) | tr -d [:digit:]_)
+ DEFAULT_RULES   = $(WM_DIR)/rules/$(WM_ARCH)$(COMPILER_TYPE)
+ RULES           = $(WM_DIR)/rules/$(WM_ARCH)$(WM_COMPILER)
+ WMAKE_BIN       = $(WM_DIR)/platforms/$(WM_ARCH)$(WM_COMPILER)
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/c++AVX	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/c++AVX	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++c++DBUG     =
++c++OPT      = -xAVX -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/c++AVX2	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/c++AVX2	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++c++DBUG     =
++c++OPT      = -xCORE-AVX2 -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/c++Dispatch	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/c++Dispatch	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++c++DBUG     =
++c++OPT      = -axCORE-AVX2,AVX,SSE4_2 -xSSE4_2 -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/c++SSE42	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/c++SSE42	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++c++DBUG     =
++c++OPT      = -xSSE4_2 -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/c++xHost	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/c++xHost	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++c++DBUG     =
++c++OPT      = -xHost -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/cAVX 	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/cAVX	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -xAVX -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/cAVX2	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/cAVX2	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -xCORE-AVX2 -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/cDispatch	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/cDispatch	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -axCORE-AVX2,AVX,SSE4_2 -xSSE4_2 -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/cSSE42	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/cSSE42	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -xSSE4_2 -O3
+--- ../orig/OpenFOAM-v1612+/wmake/rules/linux64Icc/cxHost	1970-01-01 00:00:00.000000000 +0000
++++ ./wmake/rules/linux64Icc/cxHost	1970-01-01 00:00:00.000000000 +0000
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -xHost -O3

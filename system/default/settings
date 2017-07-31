@@ -1,0 +1,26 @@
+#!/bin/sh
+
+case $COMPILER_TYPE in
+    ThirdParty)
+	;;
+    system)
+	case "$COMPILER" in
+	    *)
+		;;
+	esac	
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    *)
+	;;
+esac
+
+case $MPLIB in
+    INTELMPI*)
+	export MPI_ROOT=$I_MPI_ROOT
+	;;
+esac
+

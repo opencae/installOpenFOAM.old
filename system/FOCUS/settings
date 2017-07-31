@@ -1,0 +1,81 @@
+#!/bin/sh
+
+module purge
+module load PrgEnv-gnu482
+
+case $COMPILER_TYPE in
+    ThirdParty)
+	;;
+    system)
+	case "$COMPILER" in
+	    Gcc6_3_0)
+		module load PrgEnv-gnu630
+		;;
+	    Icc2014_0_080)
+		module load PrgEnv-intel-14.0.0.080
+		;;
+	    Icc2014_2_144)
+		module load PrgEnv-intel-14.0.2.144
+		;;
+	    Icc2015_1_133)
+		module load PrgEnv-intel-15.0.1.133
+		;;
+	    Icc2016_2_181)
+		module load PrgEnv-intel-16.0.2.181
+		;;
+	    Icc2017_1_132)
+		module load PrgEnv-intel-17.0.1.132
+		;;
+	    *)
+		;;
+	esac	
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    SYSTEMOPENMPI)
+	case "$COMPILER" in
+	    Gcc*)
+		module load gnu/openmpi165
+		;;
+	    Icc*)
+		module load intel/openmpi165
+		;;
+	esac		
+	;;
+    SYSTEMOPENMPI2_1_1)
+	case "$COMPILER" in
+	    Gcc*)
+		module load gnu/openmpi211-cuda
+		;;
+	    Icc*)
+		module load intel/openmpi211-cuda
+		;;
+	esac		
+	;;
+    INTELMPI4_1_0)
+	module load impi410
+	;;
+    INTELMPI4_1_1)
+	module load impi411
+	;;
+    INTELMPI5_0_2)
+	module load impi502
+	;;
+    INTELMPI5_1_3)
+	module load impi513
+	;;
+    INTELMPI2017_1_132)
+	module load impi-2017.1.132
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    INTELMPI*)
+	export MPI_ROOT=$I_MPI_ROOT
+	;;
+esac

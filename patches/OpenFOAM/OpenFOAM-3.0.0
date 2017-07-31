@@ -1,0 +1,311 @@
+--- ../orig/OpenFOAM-3.0.0/etc/config/CGAL.sh	2015-11-03 19:30:23.000000000 +0900
++++ ./etc/config/CGAL.sh	2017-01-27 08:21:02.000000000 +0900
+@@ -29,7 +29,7 @@
+ #     Sourced from OpenFOAM-<VERSION>/etc/bashrc
+ #------------------------------------------------------------------------------
+ 
+-boost_version=boost-system
++boost_version=boost_1_55_0
+ cgal_version=CGAL-4.7
+ 
+ export BOOST_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$boost_version
+--- ../orig/OpenFOAM-3.0.0/etc/config/settings.sh	2015-11-03 19:30:23.000000000 +0900
++++ ./etc/config/settings.sh	2017-01-23 21:48:33.000000000 +0900
+@@ -243,47 +243,23 @@
+ case "${foamCompiler}" in
+ OpenFOAM | ThirdParty)
+     case "$WM_COMPILER" in
+-    Gcc | Gcc48)
+-        gcc_version=gcc-4.8.4
+-        gmp_version=gmp-5.1.2
+-        mpfr_version=mpfr-3.1.2
+-        mpc_version=mpc-1.0.1
+-        ;;
+-    Gcc45)
+-        gcc_version=gcc-4.5.4
+-        gmp_version=gmp-5.1.2
+-        mpfr_version=mpfr-3.1.2
+-        mpc_version=mpc-1.0.1
+-        ;;
+-    Gcc46)
+-        gcc_version=gcc-4.6.4
+-        gmp_version=gmp-5.1.2
+-        mpfr_version=mpfr-3.1.2
+-        mpc_version=mpc-1.0.1
+-        ;;
+-    Gcc47)
+-        gcc_version=gcc-4.7.4
+-        gmp_version=gmp-5.1.2
+-        mpfr_version=mpfr-3.1.2
+-        mpc_version=mpc-1.0.1
+-        ;;
+-    Gcc49)
+-        gcc_version=gcc-4.9.2
+-        gmp_version=gmp-5.1.2
+-        mpfr_version=mpfr-3.1.2
+-        mpc_version=mpc-1.0.1
+-        ;;
+-    Gcc51)
+-        gcc_version=gcc-5.1.0
+-        gmp_version=gmp-5.1.2
+-        mpfr_version=mpfr-3.1.2
+-        mpc_version=mpc-1.0.1
+-        ;;
+-    Clang)
+-        # using clang - not gcc
++    Gcc*)
++        version=${WM_COMPILER#Gcc}
++        version=${version%KNL}
++        version=${version//_/.}
++        gcc_version=gcc-$version
++	gmp_version=gmp-6.1.2
++	mpfr_version=mpfr-3.1.5
++	mpc_version=mpc-1.0.3
++        ;;
++    Clang*)
++        version=${WM_COMPILER#Clang}
++        version=${version%KNL}
++        version=${version//_/.}
++        # Using clang - not gcc
+         export WM_CC='clang'
+         export WM_CXX='clang++'
+-        clang_version=llvm-3.6.0
++        clang_version=llvm-$version
+         ;;
+     *)
+         echo 1>&2
+@@ -545,11 +521,11 @@
+     _foamAddLib     $MPI_ARCH_PATH/lib
+     ;;
+ 
+-SGIMPI)
++SGIMPI*)
+     # No trailing slash
+     [ "${MPI_ROOT%/}" = "${MPI_ROOT}" ] || MPI_ROOT="${MPI_ROOT%/}"
+ 
+-    export FOAM_MPI="${MPI_ROOT##*/}"
++    export FOAM_MPI="$WM_MPLIB"
+     export MPI_ARCH_PATH=$MPI_ROOT
+ 
+     if [ ! -d "$MPI_ROOT" -o -z "$MPI_ARCH_PATH" ]
+@@ -572,11 +548,11 @@
+     _foamAddLib     $MPI_ARCH_PATH/lib
+     ;;
+ 
+-INTELMPI)
++INTELMPI*)
+     # No trailing slash
+     [ "${MPI_ROOT%/}" = "${MPI_ROOT}" ] || MPI_ROOT="${MPI_ROOT%/}"
+ 
+-    export FOAM_MPI="${MPI_ROOT##*/}"
++    export FOAM_MPI="$WM_MPLIB"
+     export MPI_ARCH_PATH=$MPI_ROOT
+ 
+     if [ ! -d "$MPI_ROOT" -o -z "$MPI_ARCH_PATH" ]
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/c	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/c	2017-01-25 08:12:53.000000000 +0900
+@@ -0,0 +1,16 @@
++SUFFIXES += .c
++
++cWARN        = -Wall
++
++cc          = gcc -m64 -march=knl -DvectorMachine -DKNL
++
++include $(RULES)/c$(WM_COMPILE_OPTION)
++
++cFLAGS      = $(GFLAGS) $(cWARN) $(cOPT) $(cDBUG) $(LIB_HEADER_DIRS) -fPIC
++
++ctoo        = $(WM_SCHEDULER) $(cc) $(cFLAGS) -c $< -o $@
++
++LINK_LIBS   = $(cDBUG)
++
++LINKLIBSO   = $(cc) -shared
++LINKEXE     = $(cc) -Xlinker --add-needed -Xlinker -z -Xlinker nodefs
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/c++	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/c++	2017-01-25 08:12:53.000000000 +0900
+@@ -0,0 +1,24 @@
++SUFFIXES += .C
++
++c++WARN     = -Wall -Wextra -Wold-style-cast -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof
++
++# Suppress some warnings for flex++ and CGAL
++c++LESSWARN = -Wno-old-style-cast -Wno-unused-local-typedefs -Wno-array-bounds
++
++CC          = g++ -m64 -march=knl -DvectorMachine -DKNL
++
++include $(RULES)/c++$(WM_COMPILE_OPTION)
++
++ptFLAGS     = -DNoRepository -ftemplate-depth-100
++
++c++FLAGS    = $(GFLAGS) $(c++WARN) $(c++OPT) $(c++DBUG) $(ptFLAGS) $(LIB_HEADER_DIRS) -fPIC
++
++Ctoo        = $(WM_SCHEDULER) $(CC) $(c++FLAGS) -c $< -o $@
++cxxtoo      = $(Ctoo)
++cctoo       = $(Ctoo)
++cpptoo      = $(Ctoo)
++
++LINK_LIBS   = $(c++DBUG)
++
++LINKLIBSO   = $(CC) $(c++FLAGS) -shared -Xlinker --add-needed -Xlinker --no-as-needed
++LINKEXE     = $(CC) $(c++FLAGS) -Xlinker --add-needed -Xlinker --no-as-needed
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/c++Debug	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/c++Debug	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++c++DBUG    = -ggdb3 -DFULLDEBUG
++c++OPT      = -O0 -fdefault-inline
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/c++Opt	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/c++Opt	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,4 @@
++c++DBUG     =
++c++OPT      = -O3
++
++ROUNDING_MATH = -frounding-math
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/c++Prof	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/c++Prof	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++c++DBUG    = -pg
++c++OPT     = -O2
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/cDebug	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/cDebug	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++cDBUG       = -ggdb -DFULLDEBUG
++cOPT        = -O1 -fdefault-inline -finline-functions
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/cOpt	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/cOpt	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -O3
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/cProf	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/cProf	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++cDBUG       = -pg
++cOPT        = -O2
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/general	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/general	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,8 @@
++CPP        = cpp -traditional-cpp $(GFLAGS)
++
++PROJECT_LIBS = -l$(WM_PROJECT) -ldl
++
++include $(GENERAL_RULES)/standard
++
++include $(RULES)/c
++include $(RULES)/c++
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/mplibHPMPI	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/mplibHPMPI	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,3 @@
++PFLAGS     =
++PINC       = -isystem $(MPI_ARCH_PATH)/include -D_MPICC_H
++PLIBS      = -L$(MPI_ARCH_PATH)/lib/linux_amd64 -lmpi
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64GccKNL/mplibINTELMPI	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64GccKNL/mplibINTELMPI	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,3 @@
++PFLAGS     = -DMPICH_SKIP_MPICXX
++PINC       = -isystem $(MPI_ARCH_PATH)/include64
++PLIBS      = -L$(MPI_ARCH_PATH)/lib64 -lmpi
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64Icc/c++Opt	2015-11-03 19:30:23.000000000 +0900
++++ ./wmake/rules/linux64Icc/c++Opt	2017-01-24 07:24:34.000000000 +0900
+@@ -1,2 +1,2 @@
+ c++DBUG     =
+-c++OPT      = -xHost -O2
++c++OPT      = -O2
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/c	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/c	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,16 @@
++SUFFIXES += .c
++
++cWARN        =
++
++cc          = icc
++
++include $(RULES)/c$(WM_COMPILE_OPTION)
++
++cFLAGS      = $(GFLAGS) $(cWARN) $(cOPT) $(cDBUG) $(LIB_HEADER_DIRS) -fPIC
++
++ctoo        = $(WM_SCHEDULER) $(cc) $(cFLAGS) -c $< -o $@
++
++LINK_LIBS   = $(cDBUG) -L$(IA32ROOT)/lib
++
++LINKLIBSO   = $(cc) $(cFLAGS) -shared
++LINKEXE     = $(cc) $(cFLAGS) -Xlinker --add-needed -Xlinker -z -Xlinker nodefs
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/c++	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/c++	2017-01-26 08:41:45.000000000 +0900
+@@ -0,0 +1,25 @@
++SUFFIXES += .C
++
++c++WARN     = -Wall -Wextra -Wnon-virtual-dtor -Wno-unused-parameter -Wno-invalid-offsetof \
++              -diag-disable 2304
++
++# Suppress some warnings for flex++ and CGAL
++c++LESSWARN = -diag-disable 1224,2026,2305
++
++CC          = icpc -std=c++0x -fp-trap=common -fp-model precise -xmic-avx512 -DvectorMachine -fp-speculation=safe
++
++include $(RULES)/c++$(WM_COMPILE_OPTION)
++
++ptFLAGS     = -DNoRepository
++
++c++FLAGS    = $(GFLAGS) $(c++WARN) $(c++OPT) $(c++DBUG) $(ptFLAGS) $(LIB_HEADER_DIRS) -fPIC
++
++Ctoo        = $(WM_SCHEDULER) $(CC) $(c++FLAGS) -c $< -o $@
++cxxtoo      = $(Ctoo)
++cctoo       = $(Ctoo)
++cpptoo      = $(Ctoo)
++
++LINK_LIBS   = $(c++DBUG) -L$(IA64ROOT)/lib
++
++LINKLIBSO   = $(CC) $(c++FLAGS) -shared -Xlinker --add-needed -Xlinker --no-as-needed
++LINKEXE     = $(CC) $(c++FLAGS) -Xlinker --add-needed -Xlinker --no-as-needed
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/c++Debug	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/c++Debug	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++c++DBUG    = -g -DFULLDEBUG -O0
++c++OPT     =
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/c++Opt	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/c++Opt	2017-01-24 07:24:34.000000000 +0900
+@@ -0,0 +1,2 @@
++c++DBUG     =
++c++OPT      = -O2
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/c++Prof	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/c++Prof	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++c++DBUG    = -pg
++c++OPT     = -O2
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/cDebug	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/cDebug	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++cDBUG       = -g -DFULLDEBUG -O0
++cOPT        =
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/cOpt	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/cOpt	2017-01-26 08:41:45.000000000 +0900
+@@ -0,0 +1,2 @@
++cDBUG       =
++cOPT        = -O3 -no-prec-div -no-prec-div
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/cProf	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/cProf	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,2 @@
++cDBUG       = -pg
++cOPT        = -O2
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/general	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/general	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,8 @@
++CPP        = /lib/cpp -traditional-cpp $(GFLAGS)
++
++PROJECT_LIBS = -l$(WM_PROJECT) -ldl
++
++include $(GENERAL_RULES)/standard
++
++include $(RULES)/c
++include $(RULES)/c++
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/mplibHPMPI	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/mplibHPMPI	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,3 @@
++PFLAGS     =
++PINC       = -isystem $(MPI_ARCH_PATH)/include -D_MPICC_H
++PLIBS      = -L$(MPI_ARCH_PATH)/lib/linux_amd64 -lmpi
+--- ../orig/OpenFOAM-3.0.0/wmake/rules/linux64IccKNL/mplibINTELMPI	1970-01-01 09:00:00.000000000 +0900
++++ ./wmake/rules/linux64IccKNL/mplibINTELMPI	2015-11-03 19:30:23.000000000 +0900
+@@ -0,0 +1,3 @@
++PFLAGS     = -DMPICH_SKIP_MPICXX
++PINC       = -isystem $(MPI_ARCH_PATH)/include64
++PLIBS      = -L$(MPI_ARCH_PATH)/lib64 -lmpi

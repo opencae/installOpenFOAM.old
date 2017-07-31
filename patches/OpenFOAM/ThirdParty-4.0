@@ -1,0 +1,653 @@
+--- ../orig/ThirdParty-4.0/etc/tools/ParaViewFunctions	2016-06-09 22:36:59.000000000 +0900
++++ ./etc/tools/ParaViewFunctions	2017-02-03 12:21:10.000000000 +0900
+@@ -222,7 +222,7 @@
+         }
+ 
+         pythonMajor=$(echo $PYTHON_LIBRARY | sed 's/.*libpython\(.*\)\.so.*/\1/')
+-        pythonInclude=/usr/include/python$pythonMajor
++        pythonInclude=${PYTHON_INCLUDE:-/usr/include/python$pythonMajor}
+ 
+         # Note - we could also allow for a PYTHON_INCLUDE variable ...
+         [ -d "$pythonInclude" ] || {
+--- ../orig/ThirdParty-4.0/etc/tools/QtFunctions	1970-01-01 09:00:00.000000000 +0900
++++ ./etc/tools/QtFunctions	2017-02-03 12:21:10.000000000 +0900
+@@ -0,0 +1,148 @@
++#---------------------------------*- sh -*-------------------------------------
++# =========                 |
++# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
++#  \\    /   O peration     |
++#   \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
++#    \\/     M anipulation  | Copyright (C) 2016 OpenCFD Ltd.
++#------------------------------------------------------------------------------
++# License
++#     This file is part of OpenFOAM.
++#
++#     OpenFOAM is free software: you can redistribute it and/or modify it
++#     under the terms of the GNU General Public License as published by
++#     the Free Software Foundation, either version 3 of the License, or
++#     (at your option) any later version.
++#
++#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
++#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++#     for more details.
++#
++#     You should have received a copy of the GNU General Public License
++#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
++#
++# File
++#     etc/tools/QtFunction
++#
++# Description
++#     Functions for helping relocate a QT installation
++#
++#------------------------------------------------------------------------------
++
++#
++# Create a qt.conf file in the QT bin/
++# - this can be modified easily if the qt installation is relocated
++#
++createQtConf()
++{
++    echo "create:"
++    echo "    $QT_ARCH_PATH/bin/qt.conf"
++
++    [ -n "$QT_ARCH_PATH" -a -d "$QT_ARCH_PATH/bin" ] || {
++        echo "Error: QT_ARCH_PATH not correctly set"
++        return
++    }
++
++    echo "[Paths]"            > $QT_ARCH_PATH/bin/qt.conf
++    echo "Prefix=$QT_ARCH_PATH" >> $QT_ARCH_PATH/bin/qt.conf
++}
++
++
++#
++# Adjust pkgconfig information
++# to generalize *location=, -L/... and -I/...
++# to use ${prefix}
++#
++adjustPkgConfig()
++{
++    echo "edit pkgconfig:"
++    echo "    $QT_ARCH_PATH/lib/pkgconfig/*.pc"
++
++    [ -n "$QT_ARCH_PATH" -a -d "$QT_ARCH_PATH/lib/pkgconfig" ] || {
++        echo "Error: QT_ARCH_PATH not correctly set"
++        return
++    }
++
++    (
++        cd $QT_ARCH_PATH/lib/pkgconfig || exit
++
++        unset nfiles
++        for i in *.pc
++        do
++            if [ -f "$i" ]
++            then
++                nfiles="x$nfiles"
++                sed -i \
++                    -e 's@\(location=\)'"$QT_ARCH_PATH/"'@\1${prefix}/@' \
++                    -e 's@\(-[IL]\)'"$QT_ARCH_PATH/"'@\1${prefix}/@g'    \
++                    $i
++            fi
++        done
++        echo "    edited ${#nfiles} files"
++    )
++}
++
++
++#
++# Change prefix=... and Prefix=... to use ${prefix}
++#
++changePrefix()
++{
++    echo "relocate QT installation to new prefix directory:"
++    echo "    $QT_ARCH_PATH"
++    echo "edit:"
++    echo "    $QT_ARCH_PATH/bin/qt.conf"
++    echo "    $QT_ARCH_PATH/lib/pkgconfig/*.pc"
++
++    [ -n "$QT_ARCH_PATH" -a -d "$QT_ARCH_PATH/bin" -a -d "$QT_ARCH_PATH/lib/pkgconfig" ] || {
++        echo "Error: QT_ARCH_PATH not correctly set"
++        return
++    }
++
++    # adjust qt.conf
++    for i in $QT_ARCH_PATH/bin/qt.conf
++    do
++        if [ -f "$i" ]
++        then
++            nfiles="x$nfiles"
++            sed -i \
++                -e 's@^\([Pp]refix=\).*$@\1'"$QT_ARCH_PATH@" \
++                $i
++            echo "    edited 1 file"
++        fi
++    done
++
++    # adjust pkgconfig files
++    (
++        cd $QT_ARCH_PATH/lib/pkgconfig || exit
++
++        unset nfiles
++        for i in *.pc
++        do
++            if [ -f "$i" ]
++            then
++                nfiles="x$nfiles"
++                sed -i \
++                    -e 's@^\([Pp]refix=\).*$@\1'"$QT_ARCH_PATH@" \
++                    $i
++            fi
++        done
++        echo "    edited ${#nfiles} files"
++    )
++
++}
++
++# ------------------------------------------------------------------------------
++
++#
++# create qt.conf and adjustPkgConfig to use ${prefix} internally
++#
++finalizeQt()
++{
++    echo "Create/Edit files to ease later relocation of a QT installation"
++    createQtConf
++    adjustPkgConfig
++}
++
++
++# ----------------------------------------------------------------- end-of-file
+--- ../orig/ThirdParty-4.0/etc/tools/ThirdPartyFunctions	2016-06-09 22:36:59.000000000 +0900
++++ ./etc/tools/ThirdPartyFunctions	2017-02-03 12:21:10.000000000 +0900
+@@ -32,26 +32,15 @@
+ #------------------------------------------------------------------------------
+ 
+ # Define the normal build and prefix directories
++sourceBASE=$WM_THIRD_PARTY_DIR
+ buildBASE=$WM_THIRD_PARTY_DIR/build/$WM_ARCH$WM_COMPILER
+ installBASE=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER
+ 
+-
+ #
+ # Mostly building without wmake
+ # - disable wmakeScheduler variables
+-# - restrict WM_NCOMPPROCS to local number of cores
+ #
+ unset WM_HOSTS WM_SCHEDULER
+-export WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo 2>/dev/null | wc -l)
+-if [ $WM_NCOMPPROCS -le 1 ]
+-then
+-    WM_NCOMPPROCS=1
+-elif [ $WM_NCOMPPROCS -ge 8 ]
+-then
+-    WM_NCOMPPROCS=8
+-fi
+-# echo "Building on $WM_NCOMPPROCS cores"
+-
+ 
+ #
+ # If WM_CONTINUE_ON_ERROR not set activate the shell option "stop on error"
+@@ -128,5 +117,27 @@
+     set -x
+ }
+ 
++# Report error and exit
++die()
++{
++    exec 1>&2
++    echo
++    echo "Error: see '${0##*/} -help' for usage"
++    while [ "$#" -ge 1 ]; do echo "    $1"; shift; done
++    echo
++    exit 1
++}
++
++# Test if it matches "*-none"
++_foamIsNone()
++{
++    test "${1##*-}" = none
++}
++
++# Test if it matches "*-system"
++_foamIsSystem()
++{
++    test "${1##*-}" = system
++}
+ 
+ #------------------------------------------------------------------------------
+--- ../orig/ThirdParty-4.0/makeCGAL	2016-06-09 22:36:59.000000000 +0900
++++ ./makeCGAL	2017-02-03 12:21:10.000000000 +0900
+@@ -47,9 +47,9 @@
+ set -x
+ 
+ cgalPACKAGE=${cgal_version:-CGAL-4.8}
+-boostPACKAGE=${boost_version:-boost-system}
+-gmpPACKAGE=${gmp_version:-gmp-system}
+-mpfrPACKAGE=${mpfr_version:-mpfr-system}
++boostPACKAGE=boost_1_55_0
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
+ 
+ #------------------------------------------------------------------------------
+ # Run from third-party directory only
+--- ../orig/ThirdParty-4.0/makeGcc	2016-06-09 22:36:59.000000000 +0900
++++ ./makeGcc	2017-02-03 12:21:10.000000000 +0900
+@@ -34,10 +34,10 @@
+ . $WM_PROJECT_DIR/etc/config.sh/functions
+ _foamSource $($WM_PROJECT_DIR/bin/foamEtcFile config.sh/compiler)
+ 
+-gmpPACKAGE=${gmp_version:-gmp-5.1.2}
+-mpfrPACKAGE=${mpfr_version:-mpfr-3.1.2}
+-mpcPACKAGE=${mpc_version:-mpc-1.0.1}
+-gccPACKAGE=$gcc_version
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
++mpcPACKAGE=mpc-1.0.3
++gccPACKAGE=gcc-6.3.0
+ 
+ 
+ #------------------------------------------------------------------------------
+@@ -291,6 +291,7 @@
+         --enable-__cxa_atexit \
+         --enable-libstdcxx-allocator=new \
+         --with-system-zlib \
++        --disable-multilib \
+         $GCC_BUILD_OPTIONS \
+         MAKEINFO=missing \
+     && make -j $WM_NCOMPPROCS \
+--- ../orig/ThirdParty-4.0/makeMesa	1970-01-01 09:00:00.000000000 +0900
++++ ./makeMesa	2017-02-03 12:21:10.000000000 +0900
+@@ -0,0 +1,199 @@
++#!/bin/sh
++#------------------------------------------------------------------------------
++# =========                 |
++# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
++#  \\    /   O peration     |
++#   \\  /    A nd           | Copyright (C) 2016 OpenCFD Ltd.
++#    \\/     M anipulation  |
++#------------------------------------------------------------------------------
++# License
++#     This file is part of OpenFOAM.
++#
++#     OpenFOAM is free software: you can redistribute it and/or modify it
++#     under the terms of the GNU General Public License as published by
++#     the Free Software Foundation, either version 3 of the License, or
++#     (at your option) any later version.
++#
++#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
++#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++#     for more details.
++#
++#     You should have received a copy of the GNU General Public License
++#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
++#
++# Script
++#     makeMesa
++#
++# Description
++#     Build script for Mesa
++#
++# Note
++#     Building with mesa-12.x.x fails to create an include/GL directory and
++#     an "osmesa.h" file. Both make it fairly useless for off-screen VTK.
++#
++#     Building with mesa-11.x is fine and mesa-13.x also seems to be okay.
++#
++#------------------------------------------------------------------------------
++# Special purpose script, no default version.
++unset mesaPACKAGE
++
++#------------------------------------------------------------------------------
++# Run from third-party directory only
++cd ${0%/*} || exit 1
++wmakeCheckPwd "$WM_THIRD_PARTY_DIR" || {
++    echo "Error: Current directory is not \$WM_THIRD_PARTY_DIR"
++    echo "    The environment variables are inconsistent with the installation."
++    echo "    Check the OpenFOAM entries in your dot-files and source them."
++    exit 1
++}
++. etc/tools/ThirdPartyFunctions
++#------------------------------------------------------------------------------
++usage() {
++    exec 1>&2
++    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
++    cat<<USAGE
++
++usage: ${0##*/} [OPTION] mesa-VERSION
++options:
++  -gcc              Force gcc/g++ instead of the values from \$WM_CC, \$WM_CXX
++  -help
++
++* build Mesa with
++      ${mesaPACKAGE:-'unspecified MESA version'}
++
++USAGE
++    exit 1
++}
++#------------------------------------------------------------------------------
++# Ensure configure gets the correct C/C++ compiler
++[ -n "$WM_CC" ]  && export CC="$WM_CC"
++[ -n "$WM_CXX" ] && export CXX="$WM_CXX"
++
++# Non-standard location for clang?
++unset thirdPartyClang
++if [ "$WM_COMPILER_TYPE" = ThirdParty -a "$WM_COMPILER" = Clang ]
++then
++    thirdPartyClang=true
++fi
++
++# Parse options
++while [ "$#" -gt 0 ]
++do
++    case "$1" in
++    -h | -help)
++        usage
++        ;;
++    -gcc)
++        export CC=gcc    # use gcc/g++
++        export CXX=g++
++        unset thirdPartyClang
++        ;;
++    mesa-*)
++        mesaPACKAGE="${1%%/}"
++        ;;
++    *)
++        die "unknown option/argument: '$1'"
++        ;;
++    esac
++    shift
++done
++
++[ -n "$mesaPACKAGE" ] || die "The mesa-VERSION was not specified"
++
++# Nothing to build
++if _foamIsNone "$mesaPACKAGE"
++then
++    echo "Using mesa-none (skip ThirdParty build of MESA)"
++    exit 0
++elif _foamIsSystem "$mesaPACKAGE"
++then
++    echo "Using mesa-system (skip ThirdParty build of MESA)"
++    exit 0
++fi
++
++#------------------------------------------------------------------------------
++# Locate third-party clang as required
++if [ "$thirdPartyClang" = true ]
++then
++    thirdPartyClang=$(command -v clang) || {
++        echo "Error: could not properly locate clang"
++        exit 2
++    }
++
++    # root installation directory
++    thirdPartyClang=${thirdPartyClang%/bin/clang}
++
++    [ -d "$thirdPartyClang" ] || {
++        echo "Error: could not properly locate clang"
++        exit 2
++    }
++fi
++
++#------------------------------------------------------------------------------
++#
++# Build MESA
++# For 64-bit
++# - MESA itself will normally build into 'lib64'.
++#
++#   MESA_SOURCE_DIR : location of the original sources
++#   MESA_ARCH_DIR   : installation directory
++
++MESA_SOURCE_DIR=$sourceBASE/$mesaPACKAGE
++MESA_ARCH_PATH=$installBASE/$mesaPACKAGE
++
++(
++    # configuration options:
++    unset configOpt
++
++    if [ -d "$thirdPartyClang" ]
++    then
++        configOpt="$configOpt --with-llvm-prefix=$thirdPartyClang"
++    fi
++
++    # end of configuration options
++    # ----------------------------
++    buildDIR=$buildBASE/$mesaPACKAGE
++
++    cd $MESA_SOURCE_DIR || exit 1
++
++    # remove any existing build
++    rm -rf $MESA_ARCH_PATH
++    rm -rf $buildDIR
++    mkdir -p $buildDIR
++    cd $buildDIR
++
++    echo "----"
++    echo "Building $mesaPACKAGE"
++    echo "    Source         : $MESA_SOURCE_DIR"
++    echo "    Target         : $MESA_ARCH_PATH"
++    if [ -d "$thirdPartyClang" ]
++    then
++        echo "    Clang          : $thirdPartyClang"
++    fi
++    echo "----"
++
++    # possibly for older mesa versions (see paraview wiki)
++    # CXXFLAGS="-O2 -DDEFAULT_SOFTWARE_DEPTH_BITS=31" \
++    # CFLAGS="-O2 -DDEFAULT_SOFTWARE_DEPTH_BITS=31" \
++
++    ## autoreconf -fi
++    set -x
++    $MESA_SOURCE_DIR/configure \
++        --prefix=$MESA_ARCH_PATH \
++        --disable-xvmc \
++        --disable-glx \
++        --disable-dri \
++        --disable-egl \
++        --enable-texture-float \
++        --enable-gallium-osmesa --with-gallium-drivers=swrast \
++        $configOpt \
++        && make -j $WM_NCOMPPROCS \
++        && make install \
++        && echo "Built $mesaPACKAGE"
++) || {
++    echo "Error building: MESA"
++    exit 1
++}
++
++# ----------------------------------------------------------------- end-of-file
+--- ../orig/ThirdParty-4.0/makeParaView	2016-06-09 22:36:59.000000000 +0900
++++ ./makeParaView	2017-02-03 12:21:10.000000000 +0900
+@@ -48,7 +48,7 @@
+ 
+ # MPI support:
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.
+--- ../orig/ThirdParty-4.0/makeQt	1970-01-01 09:00:00.000000000 +0900
++++ ./makeQt	2017-02-03 12:21:10.000000000 +0900
+@@ -0,0 +1,177 @@
++#!/bin/sh
++#------------------------------------------------------------------------------
++# =========                 |
++# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
++#  \\    /   O peration     |
++#   \\  /    A nd           | Copyright (C) 2011 OpenFOAM Foundation
++#    \\/     M anipulation  | Copyright (C) 2016 OpenCFD Ltd.
++#------------------------------------------------------------------------------
++# License
++#     This file is part of OpenFOAM.
++#
++#     OpenFOAM is free software: you can redistribute it and/or modify it
++#     under the terms of the GNU General Public License as published by
++#     the Free Software Foundation, either version 3 of the License, or
++#     (at your option) any later version.
++#
++#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
++#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++#     for more details.
++#
++#     You should have received a copy of the GNU General Public License
++#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
++#
++# Script
++#     makeQt
++#
++# Description
++#     Build script for QT (the qt-everywhere-opensource-src package)
++#
++#------------------------------------------------------------------------------
++qtVERSION=4.8.7
++qtTYPE=qt-everywhere-opensource-src
++
++#------------------------------------------------------------------------------
++# Run from third-party directory only
++wmakeCheckPwd "$WM_THIRD_PARTY_DIR" || {
++    echo "Error: Current directory is not \$WM_THIRD_PARTY_DIR"
++    echo "    The environment variables are inconsistent with the installation."
++    echo "    Check the OpenFOAM entries in your dot-files and source them."
++    exit 1
++}
++. etc/tools/ThirdPartyFunctions
++. etc/tools/QtFunctions
++#------------------------------------------------------------------------------
++usage() {
++    exec 1>&2
++    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
++    cat<<USAGE
++
++usage: ${0##*/} [OPTION] [VERSION]
++options:
++  -gcc              Force gcc/g++ instead of the values from \$WM_CC, \$WM_CXX
++  -help
++
++* build $qtTYPE, version $qtVERSION
++
++USAGE
++    exit 1
++}
++#------------------------------------------------------------------------------
++# Export WM settings in a form that GNU configure recognizes
++[ -n "$WM_CC" ]         &&  export CC="$WM_CC"
++[ -n "$WM_CXX" ]        &&  export CXX="$WM_CXX"
++[ -n "$WM_CFLAGS" ]     &&  export CFLAGS="$WM_CFLAGS"
++[ -n "$WM_CXXFLAGS" ]   &&  export CXXFLAGS="$WM_CXXFLAGS"
++
++# Parse options
++while [ "$#" -gt 0 ]
++do
++    case "$1" in
++    -h | -help)
++        usage
++        ;;
++    -gcc)
++        export CC=gcc    # use gcc/g++
++        export CXX=g++
++        ;;
++    -qt-[1-9]* | [1-9]* | qt-*)
++        # -qt-VERSION, VERSION, qt-VERSION, qt-everywhere-opensource-src-VERSION
++        qtVERSION="${1%%/}";
++        qtVERSION="${qtVERSION##*-}"
++        ;;
++    *)
++        die "unknown option/argument: '$1'"
++        ;;
++    esac
++    shift
++done
++qtPACKAGE=$qtTYPE-$qtVERSION
++
++# nothing to build
++if _foamIsNone "$qtPACKAGE"
++then
++    echo "Using qt-none (skip ThirdParty build of QT)"
++    exit 0
++elif _foamIsSystem "$qtPACKAGE"
++then
++    echo "Using qt-system"
++    exit 0
++fi
++
++#------------------------------------------------------------------------------
++#
++# Build QT
++
++QT_SOURCE_DIR=$sourceBASE/$qtPACKAGE
++QT_ARCH_PATH=$installBASE/qt-$qtVERSION
++
++echo
++echo ========================================
++echo "Build Qt $qtPACKAGE"
++echo
++if [ -d "$QT_ARCH_PATH" -a -r "$QT_ARCH_PATH/bin/qmake" ]
++then
++    echo "Already built: Qt-$qtVERSION"
++else
++    echo "Starting build: Qt-$qtVERSION"
++    (
++        # Configuration options:
++        unset configOpt
++        configOpt="$configOpt -nomake examples"
++
++        case "$qtVERSION" in
++        4*) # QT-4
++            # Without demos.
++            configOpt="$configOpt -nomake demos"
++
++            # Without old qt3 transition code
++            configOpt="$configOpt -no-qt3support"
++
++            # Without WebKit - uses std:tr1 and does not compile with c++11
++            # Fortunately WebKit is now optional for ParaView
++            configOpt="$configOpt -no-webkit"
++            ;;
++
++        *)  # QT-5
++            # Avoid too many X11 system dependencies.
++            configOpt="$configOpt -qt-xcb"
++            ;;
++        esac
++
++        # end of configuration options
++        # ----------------------------
++        buildDIR=$buildBASE/$qtPACKAGE
++
++        cd $QT_SOURCE_DIR || exit 1
++        [ -e Makefile ] && make distclean 2>/dev/null
++
++        # Remove any existing build folder and recreate
++        rm -rf $QT_ARCH_DIR
++        rm -rf $buildDIR 2>/dev/null
++        mkdir -p $buildDIR
++
++        # Remove any remnants from a previous shadow build
++        rm -f "$QT_SOURCE_DIR/.qmake.cache" 2>/dev/null
++        rm -f "$QT_SOURCE_DIR/src/corelib/global/qconfig.h" 2>/dev/null
++        rm -f "$QT_SOURCE_DIR/src/corelib/global/qconfig.cpp" 2>/dev/null
++
++        cd $buildDIR || exit 1
++
++        # Compile as opensource, accepting LGPL conditions (yes)
++        echo yes | $QT_SOURCE_DIR/configure \
++            -prefix $QT_ARCH_PATH \
++            -opensource \
++            $configOpt \
++        && time make -j $WM_NCOMPPROCS \
++        && make install \
++        && echo "Built: Qt-$qtVERSION" \
++        && finalizeQt
++    ) || {
++        echo "Error building: Qt-$qtVERSION"
++        exit 1
++    }
++fi
++
++# ----------------------------------------------------------------- end-of-file

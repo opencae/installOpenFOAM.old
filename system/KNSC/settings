@@ -1,0 +1,55 @@
+#!/bin/sh
+
+module purge
+
+case $COMPILER_TYPE in
+    ThirdParty)
+	;;
+    system)
+	case "$COMPILER" in
+	    Icc2016_3_067)
+		. /opt/intel/parallel_studio_xe_2016.3.067/psxevars.sh
+		;;
+	    Icc2017_2_050)
+		. /opt/intel/parallel_studio_xe_2017.2.050/psxevars.sh
+		;;
+	    Icc2017_2_174)
+		. /opt/intel/compilers_and_libraries_2017.2.174/linux/bin/iccvars.sh -arch intel64 -platform linux
+		;;
+	    *)
+		;;
+	esac	
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    SYSTEMOPENMPI)
+	case "$COMPILER" in
+	    Gcc*)
+		module load openmpi/1.8.1-gnu
+		export PATH=/opt/openmpi-1.8.1-gnu-3.5-1-MIC-beta1+mpss32/bin${PATH:+:$PATH}
+		;;
+	    Icc*)
+		module load openmpi/1.8.1-intel
+		export PATH=/opt/openmpi-1.8.1-intel-3.5-1-MIC-beta1+mpss32/bin${PATH:+:$PATH}
+		;;
+	esac		
+	;;
+    INTELMPI2017_2_050)
+	export I_MPI_ROOT=/opt/intel/compilers_and_libraries_2017.2.050/linux/mpi
+	;;
+    INTELMPI2017_2_174)
+	export I_MPI_ROOT=/opt/intel/compilers_and_libraries_2017.2.174/linux/mpi
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    INTELMPI*)
+	export MPI_ROOT=$I_MPI_ROOT
+	;;
+esac
+

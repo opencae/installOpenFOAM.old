@@ -1,0 +1,114 @@
+--- ../orig/OpenFOAM-4.0/etc/config.sh/CGAL	2016-06-25 06:33:52.000000000 +0900
++++ ./etc/config.sh/CGAL	2017-02-03 12:21:10.000000000 +0900
+@@ -36,8 +36,8 @@
+ #
+ #------------------------------------------------------------------------------
+ 
+-boost_version=boost-system
+-cgal_version=cgal-system
++boost_version=boost_1_55_0
++cgal_version=CGAL-4.8
+ #cgal_version=CGAL-4.8
+ 
+ if [ -z "$SOURCE_CGAL_VERSIONS_ONLY" ]
+--- ../orig/OpenFOAM-4.0/etc/config.sh/compiler	2016-06-25 06:33:52.000000000 +0900
++++ ./etc/config.sh/compiler	2017-02-03 12:21:10.000000000 +0900
+@@ -34,43 +34,25 @@
+ OpenFOAM | ThirdParty)
+ 
+     # Default versions of GMP, MPFR and MPC, override as necessary
+-    gmp_version=gmp-5.1.2
+-    mpfr_version=mpfr-3.1.2
+-    mpc_version=mpc-1.0.1
++    gmp_version=gmp-6.1.2
++    mpfr_version=mpfr-3.1.5
++    mpc_version=mpc-1.0.3
+ 
+     case "$WM_COMPILER" in
+-    Gcc | Gcc48)
+-        gcc_version=gcc-4.8.5
+-        ;;
+-    Gcc45)
+-        gcc_version=gcc-4.5.4
+-        ;;
+-    Gcc46)
+-        gcc_version=gcc-4.6.4
+-        ;;
+-    Gcc47)
+-        gcc_version=gcc-4.7.4
+-        ;;
+-    Gcc49)
+-        gcc_version=gcc-4.9.3
+-        ;;
+-    Gcc51)
+-        gcc_version=gcc-5.1.0
+-        ;;
+-    Gcc52)
+-        gcc_version=gcc-5.2.0
+-        ;;
+-    Gcc53)
+-        gcc_version=gcc-5.3.0
+-        ;;
+-    Gcc61)
+-        gcc_version=gcc-6.1.0
+-        ;;
+-    Clang)
++    Gcc*)
++        version=${WM_COMPILER#Gcc}
++        version=${version%KNL}
++        version=${version//_/.}
++        gcc_version=gcc-$version
++        ;;
++    Clang*)
++        version=${WM_COMPILER#Clang}
++        version=${version%KNL}
++        version=${version//_/.}
+         # Using clang - not gcc
+         export WM_CC='clang'
+         export WM_CXX='clang++'
+-        clang_version=llvm-3.7.0
++        clang_version=llvm-$version
+         ;;
+     *)
+         echo 1>&2
+--- ../orig/OpenFOAM-4.0/etc/config.sh/mpi	2016-06-25 06:33:52.000000000 +0900
++++ ./etc/config.sh/mpi	2017-02-03 12:21:10.000000000 +0900
+@@ -190,11 +190,11 @@
+     _foamAddLib     $MPI_ARCH_PATH/lib
+     ;;
+ 
+-SGIMPI)
++SGIMPI*)
+     # No trailing slash
+     [ "${MPI_ROOT%/}" = "${MPI_ROOT}" ] || MPI_ROOT="${MPI_ROOT%/}"
+ 
+-    export FOAM_MPI="${MPI_ROOT##*/}"
++    export FOAM_MPI="$WM_MPLIB"
+     export MPI_ARCH_PATH=$MPI_ROOT
+ 
+     if [ ! -d "$MPI_ROOT" -o -z "$MPI_ARCH_PATH" ]
+@@ -217,11 +217,11 @@
+     _foamAddLib     $MPI_ARCH_PATH/lib
+     ;;
+ 
+-INTELMPI)
++INTELMPI*)
+     # No trailing slash
+     [ "${MPI_ROOT%/}" = "${MPI_ROOT}" ] || MPI_ROOT="${MPI_ROOT%/}"
+ 
+-    export FOAM_MPI="${MPI_ROOT##*/}"
++    export FOAM_MPI="$WM_MPLIB"
+     export MPI_ARCH_PATH=$MPI_ROOT
+ 
+     if [ ! -d "$MPI_ROOT" -o -z "$MPI_ARCH_PATH" ]
+--- ../orig/OpenFOAM-4.0/wmake/rules/General/general	2016-06-25 06:33:52.000000000 +0900
++++ ./wmake/rules/General/general	2017-02-03 12:21:10.000000000 +0900
+@@ -13,7 +13,7 @@
+ GLIB_LIBS  =
+ 
+ 
+-COMPILER_TYPE   = $(shell echo $(WM_COMPILER) | tr -d [:digit:])
++COMPILER_TYPE   = $(shell echo $(WM_COMPILER) | tr -d "[:digit:]_")
+ DEFAULT_RULES   = $(WM_DIR)/rules/$(WM_ARCH)$(COMPILER_TYPE)
+ RULES           = $(WM_DIR)/rules/$(WM_ARCH)$(WM_COMPILER)
+ WMAKE_BIN       = $(WM_DIR)/platforms/$(WM_ARCH)$(WM_COMPILER)

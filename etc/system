@@ -1,0 +1,24 @@
+#!/bin/bash
+
+hostname=`hostname -A`
+
+hostname=${hostname// /_}
+
+echo "hostname: $hostname"
+
+case "$hostname" in
+    ofp*\.jcahpc\.jp_*|*.ofp_*)
+	SYSTEM=Oakforest-PACS
+	;;
+    reedbush-u*.cc.u-tokyo.ac.jp_*|*.reedbush.cc.u-tokyo.ac.jp_*)
+	SYSTEM=Reedbush-U
+	;;
+    login-*ff*|[a-h][0-9]*|server-[0-9]*_d[0-9]*_d[0-9]*-ib_)
+	SYSTEM=FOCUS
+	;;
+    *)
+	SYSTEM=default
+	;;
+esac
+
+echo "SYSTEM: $SYSTEM"

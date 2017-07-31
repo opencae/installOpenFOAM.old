@@ -1,0 +1,99 @@
+#!/bin/sh
+
+module purge
+module load pbsutils
+
+case $COMPILER_TYPE in
+    ThirdParty)
+	;;
+    system)
+	case "$COMPILER" in
+	    Gcc4_8_5)
+		;;
+	    Gcc5_4_0)
+		module load gnu/gcc_5.4.0
+		;;
+	    Icc17_0_1_132)
+		module load intel/17.0.1.132
+		;;
+	    Icc17_0_2_174)
+		module load intel/17.0.2.174
+		;;
+	    Icc17_0_4_196)
+		module load intel/17.0.4.196
+		;;
+	    *)
+		;;
+	esac	
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    SYSTEMOPENMPI2_0_2)
+	case "$COMPILER" in
+	    Gcc*)
+		module load openmpi/2.0.2/gnu
+		;;
+	    Icc*)
+		module load openmpi/2.0.2/intel
+		;;
+	esac	
+	;;
+    SYSTEMOPENMPI2_0_3)
+	case "$COMPILER" in
+	    Gcc*)
+		module load openmpi/2.0.3/gnu
+		;;
+	    Icc*)
+		module load openmpi/2.0.3/intel
+		;;
+	esac	
+	;;
+    SYSTEMOPENMPI2_1_1)
+	case "$COMPILER" in
+	    Gcc*)
+		module load openmpi/2.1.1/gnu
+		;;
+	    Icc*)
+		module load openmpi/2.1.1/intel
+		;;
+	esac	
+	;;
+    SGIMPI2_14)
+	module load mpt/2.14
+	;;
+    SGIMPI2_15)
+	module load mpt/2.15
+	;;
+    SGIMPI2_16)
+	module load mpt/2.16
+	;;
+    INTELMPI5_1_3_210)
+	module load intel-mpi/5.1.3.210
+	;;
+    INTELMPI5_1_3_258)
+	module load intel-mpi/5.1.3.258
+	;;
+    INTELMPI2017_0_098)
+	module load intel-mpi/2017.0.098
+	;;
+    INTELMPI2017_1_132)
+	module load intel-mpi/2017.1.132
+	;;
+    INTELMPI2017_2_174)
+	module load intel-mpi/2017.2.174
+	;;
+    INTELMPI2017_3_196)
+	module load intel-mpi/2017.3.196
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    INTELMPI*)
+	export MPI_ROOT=$I_MPI_ROOT
+	;;
+esac

@@ -1,0 +1,8 @@
+#!/bin/bash
+#PBS -W group_list=gz00
+#PBS -q u-debug
+#PBS -l walltime=0:30:00
+#PBS -l select=1:mpiprocs=36
+
+cd $PBS_O_WORKDIR
+./install.sh >& log.Allinstall.sh.$PBS_JOBID

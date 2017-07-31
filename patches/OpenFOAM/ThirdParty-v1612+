@@ -1,0 +1,75 @@
+--- ../orig/ThirdParty-v1612+/etc/tools/ThirdPartyFunctions	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/tools/ThirdPartyFunctions	1970-01-01 00:00:00.000000000 +0000
+@@ -39,18 +39,8 @@
+ #
+ # Mostly building without wmake
+ # - disable wmakeScheduler variables
+-# - use max number of cores for building
+ #
+ unset WM_HOSTS WM_SCHEDULER
+-if [ -r /proc/cpuinfo ]
+-then
+-    WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo | wc -l)
+-else
+-    WM_NCOMPPROCS=1
+-fi
+-export WM_NCOMPPROCS
+-# echo "Building on $WM_NCOMPPROCS cores"
+-
+ 
+ #
+ # If WM_CONTINUE_ON_ERROR not set activate the shell option "stop on error"
+--- ../orig/ThirdParty-v1612+/etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM	1970-01-01 00:00:00.000000000 +0000
++++ ./etc/wmakeFiles/scotch/Makefile.inc.i686_pc_linux2.shlib-OpenFOAM	1970-01-01 00:00:00.000000000 +0000
+@@ -9,10 +9,10 @@
+ OBJ         = .o
+ 
+ MAKE        = make
+-AR          = gcc
++AR          = $(WM_CC)
+ ARFLAGS     = $(WM_CFLAGS) -shared -o
+ CAT         = cat
+-CCS         = gcc
++CCS         = $(WM_CC)
+ CCP         = mpicc
+ CCD         = mpicc
+ CFLAGS      = $(WM_CFLAGS) -O3 -DCOMMON_FILE_COMPRESS_GZ -DCOMMON_RANDOM_FIXED_SEED -DSCOTCH_RENAME -Drestrict=__restrict
+--- ../orig/ThirdParty-v1612+/makeCGAL	1970-01-01 00:00:00.000000000 +0000
++++ ./makeCGAL	1970-01-01 00:00:00.000000000 +0000
+@@ -199,12 +199,24 @@
+ 
+         rm -rf $BOOST_ARCH_PATH
+ 
++# https://proteusmaster.urcf.drexel.edu/urcfwiki/index.php/Compiling_OpenFOAM
++	case $WM_COMPILER in
++	    Gcc*)
++		BOOST_TOOLSET=gcc
++		;;
++	    Icc*)
++		BOOST_TOOLSET=intel
++		;;
++	esac	
++
++	echo $BOOST_TOOLSET
++
+         ./bootstrap.sh \
+             --prefix=$BOOST_ARCH_PATH \
+             --libdir=$boostLib \
+             --with-libraries=thread \
+             --with-libraries=system \
+-        && ./bjam toolset=$WM_CC -j $WM_NCOMPPROCS install \
++        && ./bjam toolset=${BOOST_TOOLSET} -j $WM_NCOMPPROCS install \
+         && echo "Built: boost"
+     ) || {
+         echo "Error building: boost"
+--- ../orig/ThirdParty-v1612+/makeParaView	1970-01-01 00:00:00.000000000 +0000
++++ ./makeParaView	1970-01-01 00:00:00.000000000 +0000
+@@ -62,7 +62,7 @@
+ # MPI support:
+ # use 0 or unset MPI_MAX_PROCS for no upper-limit
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.

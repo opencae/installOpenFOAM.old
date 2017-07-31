@@ -1,0 +1,376 @@
+--- ../orig/ThirdParty-2.3.0/Allwmake	2014-02-07 00:31:37.000000000 +0900
++++ ./Allwmake	2017-01-22 14:36:35.000000000 +0900
+@@ -98,7 +98,6 @@
+             --libdir=$MPI_ARCH_PATH/lib${WM_COMPILER_LIB_ARCH} \
+             --disable-mpi-f77 \
+             --disable-mpi-f90 \
+-            --disable-mpi-cxx \
+             --disable-mpi-profile \
+             $configOpt \
+             ;
+@@ -134,7 +133,6 @@
+             --disable-f77 \
+             --disable-f90 \
+             --disable-f90modules \
+-            --disable-c++ \
+             --disable-mpedbg \
+             --disable-devdebug \
+             --disable-debug \
+@@ -142,7 +140,12 @@
+             --with-device=ch_p4 \
+             ;
+ 
++        # For MPICH2 below 1.5a1 uncomment this line and comment next
++        # make && make install
++
++        # For MPICH2 1.5a1 or above
+         make -j $WM_NCOMPPROCS && make install
++
+         make distclean
+ 
+         if [ -r $MPI_ARCH_PATH ]
+@@ -325,11 +328,13 @@
+         echo "    metis libs   in $FOAM_EXT_LIBBIN"
+         echo
+     else
++    (
+         set -x
+         cd $METIS_VERSION  || exit 1
+         make config shared=1 prefix=$METIS_ARCH_PATH
+         make -j $WM_NCOMPPROCS install
+         cp $METIS_ARCH_PATH/lib/libmetis.so $FOAM_EXT_LIBBIN
++    )
+     fi
+ else
+     echo "    optional component Metis was not found"
+--- ../orig/ThirdParty-2.3.0/etc/tools/ParaView4Functions	2014-02-06 20:49:42.000000000 +0900
++++ ./etc/tools/ParaView4Functions	2017-01-29 07:57:48.000000000 +0900
+@@ -213,7 +213,7 @@
+         }
+ 
+         pythonMajor=$(echo $PYTHON_LIBRARY | sed 's/.*libpython\(.*\)\.so.*/\1/')
+-        pythonInclude=/usr/include/python$pythonMajor
++#        pythonInclude=/usr/include/python$pythonMajor
+ 
+         # note - we could also allow for a PYTHON_INCLUDE variable ...
+         [ -d "$pythonInclude" ] || {
+--- ../orig/ThirdParty-2.3.0/etc/tools/ParaViewFunctions	2014-02-06 20:49:42.000000000 +0900
++++ ./etc/tools/ParaViewFunctions	2017-01-29 07:57:48.000000000 +0900
+@@ -213,7 +213,7 @@
+         }
+ 
+         pythonMajor=$(echo $PYTHON_LIBRARY | sed 's/.*libpython\(.*\)\.so.*/\1/')
+-        pythonInclude=/usr/include/python$pythonMajor
++#        pythonInclude=/usr/include/python$pythonMajor
+ 
+         # note - we could also allow for a PYTHON_INCLUDE variable ...
+         [ -d "$pythonInclude" ] || {
+--- ../orig/ThirdParty-2.3.0/etc/tools/ThirdPartyFunctions	2014-02-06 20:49:42.000000000 +0900
++++ ./etc/tools/ThirdPartyFunctions	2017-01-29 07:54:07.000000000 +0900
+@@ -38,19 +38,8 @@
+ #
+ # mostly building without wmake
+ # - disable wmakeScheduler variables
+-# - restrict WM_NCOMPPROCS to local number of cores
+ #
+ unset WM_HOSTS WM_SCHEDULER
+-export WM_NCOMPPROCS=$(egrep "^processor" /proc/cpuinfo 2>/dev/null | wc -l)
+-if [ $WM_NCOMPPROCS -le 1 ]
+-then
+-    WM_NCOMPPROCS=1
+-elif [ $WM_NCOMPPROCS -ge 8 ]
+-then
+-    WM_NCOMPPROCS=8
+-fi
+-# echo "Building on $WM_NCOMPPROCS cores"
+-
+ 
+ #
+ # download file $1 from url $2 into download/ directory
+--- ../orig/ThirdParty-2.3.0/makeCGAL	2014-02-07 00:31:37.000000000 +0900
++++ ./makeCGAL	2017-01-27 08:20:51.000000000 +0900
+@@ -40,9 +40,9 @@
+ set -x
+ 
+ cgalPACKAGE=CGAL-4.3
+-boostPACKAGE=boost-system
+-gmpPACKAGE=gmp-system
+-mpfrPACKAGE=mpfr-system
++boostPACKAGE=boost_1_55_0
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
+ 
+ #------------------------------------------------------------------------------
+ # run from third-party directory only
+--- ../orig/ThirdParty-2.3.0/makeCmake	2014-02-07 00:31:37.000000000 +0900
++++ ./makeCmake	2017-01-27 08:20:51.000000000 +0900
+@@ -29,7 +29,7 @@
+ #     Build script for cmake
+ #
+ #------------------------------------------------------------------------------
+-cmakePACKAGE=cmake-2.8.12.1
++cmakePACKAGE=cmake-3.2.1
+ 
+ #------------------------------------------------------------------------------
+ # run from third-party directory only
+--- ../orig/ThirdParty-2.3.0/makeGcc	2014-02-07 00:31:37.000000000 +0900
++++ ./makeGcc	2017-01-27 08:20:51.000000000 +0900
+@@ -32,10 +32,10 @@
+ #     gcc 4.3.2 is known to miscompile GMP 4.3.x on 64-bit machines
+ #
+ #------------------------------------------------------------------------------
+-gmpPACKAGE=gmp-5.0.4
+-mpfrPACKAGE=mpfr-3.1.0
+-mpcPACKAGE=mpc-0.9
+-gccPACKAGE=gcc-4.6.2
++gmpPACKAGE=gmp-6.1.2
++mpfrPACKAGE=mpfr-3.1.5
++mpcPACKAGE=mpc-1.0.3
++gccPACKAGE=gcc-6.3.0
+ 
+ #------------------------------------------------------------------------------
+ # run from third-party directory only
+@@ -278,6 +278,7 @@
+         --enable-__cxa_atexit \
+         --enable-libstdcxx-allocator=new \
+         --with-system-zlib \
++        --disable-multilib \
+     && make -j $WM_NCOMPPROCS \
+     && make install \
+     && echo "Built: $gccPACKAGE"
+--- ../orig/ThirdParty-2.3.0/makeMesa	1970-01-01 09:00:00.000000000 +0900
++++ ./makeMesa	2017-01-12 12:43:34.000000000 +0900
+@@ -0,0 +1,200 @@
++#!/bin/sh
++#------------------------------------------------------------------------------
++# =========                 |
++# \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
++#  \\    /   O peration     |
++#   \\  /    A nd           | Copyright (C) 2016 OpenCFD Ltd.
++#    \\/     M anipulation  |
++#------------------------------------------------------------------------------
++# License
++#     This file is part of OpenFOAM.
++#
++#     OpenFOAM is free software: you can redistribute it and/or modify it
++#     under the terms of the GNU General Public License as published by
++#     the Free Software Foundation, either version 3 of the License, or
++#     (at your option) any later version.
++#
++#     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
++#     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++#     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++#     for more details.
++#
++#     You should have received a copy of the GNU General Public License
++#     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
++#
++# Script
++#     makeMesa
++#
++# Description
++#     Build script for Mesa
++#
++# Note
++#     Building with mesa-12.x.x fails to create an include/GL directory and
++#     an "osmesa.h" file. Both make it fairly useless for off-screen VTK.
++#
++#     Building with mesa-11.x is fine and mesa-13.x also seems to be okay.
++#
++#------------------------------------------------------------------------------
++# Special purpose script, no default version.
++unset mesaPACKAGE
++
++#------------------------------------------------------------------------------
++# Run from third-party directory only
++cd ${0%/*} || exit 1
++wmakeCheckPwd "$WM_THIRD_PARTY_DIR" || {
++    echo "Error: Current directory is not \$WM_THIRD_PARTY_DIR"
++    echo "    The environment variables are inconsistent with the installation."
++    echo "    Check the OpenFOAM entries in your dot-files and source them."
++    exit 1
++}
++. etc/tools/ThirdPartyFunctions
++#------------------------------------------------------------------------------
++usage() {
++    exec 1>&2
++    while [ "$#" -ge 1 ]; do echo "$1"; shift; done
++    cat<<USAGE
++
++usage: ${0##*/} [OPTION] mesa-VERSION
++options:
++  -gcc              Force gcc/g++ instead of the values from \$WM_CC, \$WM_CXX
++  -help
++
++* build Mesa with
++      ${mesaPACKAGE:-'unspecified MESA version'}
++
++USAGE
++    exit 1
++}
++#------------------------------------------------------------------------------
++# Ensure configure gets the correct C/C++ compiler
++[ -n "$WM_CC" ]  && export CC="$WM_CC"
++[ -n "$WM_CXX" ] && export CXX="$WM_CXX"
++
++# Non-standard location for clang?
++unset thirdPartyClang
++if [ "$WM_COMPILER_TYPE" = ThirdParty -a "$WM_COMPILER" = Clang ]
++then
++    thirdPartyClang=true
++fi
++
++# Parse options
++while [ "$#" -gt 0 ]
++do
++    case "$1" in
++    -h | -help)
++        usage
++        ;;
++    -gcc)
++        export CC=gcc    # use gcc/g++
++        export CXX=g++
++        unset thirdPartyClang
++        ;;
++    mesa-*)
++        mesaPACKAGE="${1%%/}"
++        ;;
++    *)
++        die "unknown option/argument: '$1'"
++        ;;
++    esac
++    shift
++done
++
++[ -n "$mesaPACKAGE" ] || die "The mesa-VERSION was not specified"
++
++# Nothing to build
++if _foamIsNone "$mesaPACKAGE"
++then
++    echo "Using mesa-none (skip ThirdParty build of MESA)"
++    exit 0
++elif _foamIsSystem "$mesaPACKAGE"
++then
++    echo "Using mesa-system (skip ThirdParty build of MESA)"
++    exit 0
++fi
++
++#------------------------------------------------------------------------------
++# Locate third-party clang as required
++if [ "$thirdPartyClang" = true ]
++then
++    thirdPartyClang=$(command -v clang) || {
++        echo "Error: could not properly locate clang"
++        exit 2
++    }
++
++    # root installation directory
++    thirdPartyClang=${thirdPartyClang%/bin/clang}
++
++    [ -d "$thirdPartyClang" ] || {
++        echo "Error: could not properly locate clang"
++        exit 2
++    }
++fi
++
++#------------------------------------------------------------------------------
++#
++# Build MESA
++# For 64-bit
++# - MESA itself will normally build into 'lib64'.
++#
++#   MESA_SOURCE_DIR : location of the original sources
++#   MESA_ARCH_DIR   : installation directory
++
++MESA_SOURCE_DIR=$sourceBASE/$mesaPACKAGE
++MESA_ARCH_PATH=$installBASE/$mesaPACKAGE
++
++(
++    # configuration options:
++    unset configOpt
++
++    if [ -d "$thirdPartyClang" ]
++    then
++        configOpt="$configOpt --with-llvm-prefix=$thirdPartyClang"
++    fi
++
++    # end of configuration options
++    # ----------------------------
++    buildDIR=$buildBASE/$mesaPACKAGE
++
++    cd $MESA_SOURCE_DIR || exit 1
++
++    # remove any existing build
++    rm -rf $MESA_ARCH_PATH
++    rm -rf $buildDIR
++    mkdir -p $buildDIR
++    cd $buildDIR
++
++    echo "----"
++    echo "Building $mesaPACKAGE"
++    echo "    Source         : $MESA_SOURCE_DIR"
++    echo "    Target         : $MESA_ARCH_PATH"
++    if [ -d "$thirdPartyClang" ]
++    then
++        echo "    Clang          : $thirdPartyClang"
++    fi
++    echo "----"
++
++    # possibly for older mesa versions (see paraview wiki)
++    # CXXFLAGS="-O2 -DDEFAULT_SOFTWARE_DEPTH_BITS=31" \
++    # CFLAGS="-O2 -DDEFAULT_SOFTWARE_DEPTH_BITS=31" \
++
++    ## autoreconf -fi
++    set -x
++    $MESA_SOURCE_DIR/configure \
++        --prefix=$MESA_ARCH_PATH \
++        --disable-xvmc \
++        --disable-glx \
++        --disable-dri \
++        --disable-egl \
++        --enable-texture-float \
++        --enable-gallium-osmesa --with-gallium-drivers=swrast \
++	--enable-shared-glapi \
++        $configOpt \
++        && make -j $WM_NCOMPPROCS \
++        && make install \
++        && echo "Built $mesaPACKAGE"
++) || {
++    echo "Error building: MESA"
++    exit 1
++}
++
++# ----------------------------------------------------------------- end-of-file
+--- ../orig/ThirdParty-2.3.0/makeParaView	2014-02-07 00:31:37.000000000 +0900
++++ ./makeParaView	2017-01-27 08:20:51.000000000 +0900
+@@ -48,7 +48,7 @@
+ 
+ # MPI support:
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.
+--- ../orig/ThirdParty-2.3.0/makeParaView4	2014-02-07 00:31:37.000000000 +0900
++++ ./makeParaView4	2017-01-27 08:20:51.000000000 +0900
+@@ -48,7 +48,7 @@
+ 
+ # MPI support:
+ withMPI=false
+-MPI_MAX_PROCS=32
++MPI_MAX_PROCS=0
+ 
+ # Python support:
+ # note: script will try to determine the appropriate python library.
+--- ../orig/ThirdParty-2.3.0/makeQt	2014-02-07 00:31:37.000000000 +0900
++++ ./makeQt	2017-01-27 08:20:51.000000000 +0900
+@@ -29,7 +29,7 @@
+ #     Build script for qt-everywhere-opensource-src
+ #
+ #------------------------------------------------------------------------------
+-qtVERSION=4.7.3
++qtVERSION=4.8.7
+ qtTYPE=qt-everywhere-opensource-src
+ #------------------------------------------------------------------------------
+ # run from third-party directory only
