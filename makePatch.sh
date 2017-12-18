@@ -19,6 +19,7 @@ do
 	diff -urN ../orig/$OF ./ \
 --exclude=*~ \
 --exclude=log* \
+--exclude=*.rej \
 --exclude=*.old \
 --exclude=*.orig \
 --exclude=applications \

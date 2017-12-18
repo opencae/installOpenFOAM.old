@@ -165,9 +165,9 @@
 -boostPACKAGE=boost-system
 -gmpPACKAGE=gmp-system
 -mpfrPACKAGE=mpfr-system
-+boostPACKAGE=boost_1_55_0
-+gmpPACKAGE=gmp-6.1.2
-+mpfrPACKAGE=mpfr-3.1.5
++boostPACKAGE="boost_1_55_0"
++gmp_version="gmp-5.1.2"
++mpfr_version="mpfr-3.1.2"
  
  #------------------------------------------------------------------------------
  # run from third-party directory only
@@ -181,10 +181,10 @@
 -mpfrPACKAGE=mpfr-3.1.2
 -mpcPACKAGE=mpc-1.0.1
 -gccPACKAGE=
-+gmpPACKAGE=gmp-6.1.2
-+mpfrPACKAGE=mpfr-3.1.5
-+mpcPACKAGE=mpc-1.0.3
-+gccPACKAGE=gcc-6.3.0
++gmpPACKAGE="gmp-5.1.2"
++mpfrPACKAGE="mpfr-3.1.2"
++mpcPACKAGE="mpc-1.0.1"
++gccPACKAGE="gcc-4.8.5"
  
  #------------------------------------------------------------------------------
  # Run from third-party directory only

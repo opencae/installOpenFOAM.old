@@ -13,6 +13,15 @@ case $COMPILER_TYPE in
 	    Gcc5_4_0)
 		module load gnu/gcc_5.4.0
 		;;
+	    Icc16_0_3_210)
+		module load intel/16.0.3.210
+		;;
+	    Icc16_0_4_258)
+		module load intel/16.0.4.258
+		;;
+	    Icc17_0_0_098)
+		module load intel/17.0.0.098
+		;;
 	    Icc17_0_1_132)
 		module load intel/17.0.1.132
 		;;
@@ -87,6 +96,40 @@ case $MPLIB in
 	;;
     INTELMPI2017_3_196)
 	module load intel-mpi/2017.3.196
+	;;
+    MPIMVAPICH2_2_2)
+	case "$COMPILER" in
+	    Gcc*)
+		module load mvapich2/2.2/gnu
+		;;
+	    Icc*)
+		module load mvapich2/2.2/intel
+		;;
+	esac	
+	MPI_ROOT=`which mpirun`
+	export MPI_ROOT=${MPI_ROOT/\/bin\/mpirun/}
+	;;
+    HPCXMPI1_8_0)
+	case "$COMPILER" in
+	    Gcc*)
+		module load hpcx/1.8.0/gnu
+		;;
+	    Icc*)
+		module load hpcx/1.8.0/intel
+		;;
+	esac	
+	export MPI_ROOT=$MPI_HOME
+	;;
+    HPCXMPI1_9_7)
+	case "$COMPILER" in
+	    Gcc*)
+		module load hpcx/1.9.7/gnu
+		;;
+	    Icc*)
+		module load hpcx/1.9.7/intel
+		;;
+	esac	
+	export MPI_ROOT=$MPI_HOME
 	;;
     *)
 	;;

@@ -227,9 +227,9 @@
 -boostPACKAGE=${boost_version:-boost-system}
 -gmpPACKAGE=${gmp_version:-gmp-system}
 -mpfrPACKAGE=${mpfr_version:-mpfr-system}
-+boostPACKAGE=boost_1_55_0
-+gmpPACKAGE=gmp-6.1.2
-+mpfrPACKAGE=mpfr-3.1.5
++boostPACKAGE="boost_1_55_0"
++gmp_version="gmp-5.1.2"
++mpfr_version="mpfr-3.1.2"
  
  #------------------------------------------------------------------------------
  # Run from third-party directory only
@@ -243,11 +243,11 @@
 -mpfrPACKAGE=${mpfr_version:-mpfr-3.1.2}
 -mpcPACKAGE=${mpc_version:-mpc-1.0.1}
 -gccPACKAGE=$gcc_version
-+gmpPACKAGE=gmp-6.1.2
-+mpfrPACKAGE=mpfr-3.1.5
-+mpcPACKAGE=mpc-1.0.3
-+gccPACKAGE=gcc-6.3.0
- 
++gmpPACKAGE="gmp-5.1.2"
++mpfrPACKAGE="mpfr-3.1.2"
++mpcPACKAGE="mpc-1.0.1"
++gccPACKAGE="gcc-4.8.5"
+
  
  #------------------------------------------------------------------------------
 @@ -291,6 +291,7 @@
@@ -505,7 +505,7 @@
 +#     Build script for QT (the qt-everywhere-opensource-src package)
 +#
 +#------------------------------------------------------------------------------
-+qtVERSION=4.8.7
++qtVERSION="4.8.7"
 +qtTYPE=qt-everywhere-opensource-src
 +
 +#------------------------------------------------------------------------------

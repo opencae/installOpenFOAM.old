@@ -1,8 +1,10 @@
 #!/bin/bash
 
+PYTHON_TYPE=ThirdParty
+
 # Third party software version
 case "${OpenFOAM_VERSION}" in
-    OpenFOAM-2.3.0 | OpenFOAM-2.3.1)
+    OpenFOAM-2.3.0* | OpenFOAM-2.3.1* )
 	GCC_PACKAGE=gcc-4.8.5
 	GMP_PACKAGE=gmp-5.1.2
 	MPFR_PACKAGE=mpfr-3.1.2
@@ -18,7 +20,7 @@ case "${OpenFOAM_VERSION}" in
 	QT_PACKAGE=qt-4.8.7
 	CMAKE_PACKAGE=cmake-3.2.1
 	;;
-    OpenFOAM-2.4.0)
+    OpenFOAM-2.4.0* )
 	GCC_PACKAGE=gcc-4.8.5
 	GMP_PACKAGE=gmp-5.1.2
 	MPFR_PACKAGE=mpfr-3.1.2
@@ -34,7 +36,7 @@ case "${OpenFOAM_VERSION}" in
 	QT_PACKAGE=qt-4.8.7
 	CMAKE_PACKAGE=cmake-3.2.1
 	;;
-    OpenFOAM-3.0.0 | OpenFOAM-3.0.1)
+    OpenFOAM-3.0.0* | OpenFOAM-3.0.1* )
 	GCC_PACKAGE=gcc-4.8.5
 	GMP_PACKAGE=gmp-5.1.2
 	MPFR_PACKAGE=mpfr-3.1.2
@@ -50,7 +52,7 @@ case "${OpenFOAM_VERSION}" in
 	QT_PACKAGE=qt-4.8.7
 	CMAKE_PACKAGE=cmake-3.2.1
 	;;
-    OpenFOAM-v3.0+)
+    OpenFOAM-v3.0+* )
 	GCC_PACKAGE=gcc-4.8.5
 	GMP_PACKAGE=gmp-5.1.2
 	MPFR_PACKAGE=mpfr-3.1.2
@@ -66,7 +68,7 @@ case "${OpenFOAM_VERSION}" in
 	QT_PACKAGE=qt-4.8.7
 	CMAKE_PACKAGE=cmake-3.2.1
 	;;
-    OpenFOAM-4.0 | OpenFOAM-4.1)
+    OpenFOAM-4.0* | OpenFOAM-4.1*)
 	GCC_PACKAGE=gcc-4.8.5
 	GMP_PACKAGE=gmp-5.1.2
 	MPFR_PACKAGE=mpfr-3.1.2
@@ -78,6 +80,22 @@ case "${OpenFOAM_VERSION}" in
 	BOOST_PACKAGE=boost_1_55_0
 	FFTW_PACKAGE=fftw-3.3.5
 	OPENMPI_PACKAGE=openmpi-1.10.2
+	SCOTCH_PACKAGE=scotch_6.0.3
+	QT_PACKAGE=qt-4.8.7
+	CMAKE_PACKAGE=cmake-3.2.1
+	;;
+    OpenFOAM-5.0* )
+	GCC_PACKAGE=gcc-4.8.5
+	GMP_PACKAGE=gmp-5.1.2
+	MPFR_PACKAGE=mpfr-3.1.2
+	MPC_PACKAGE=mpc-1.0.1
+	PYTHON_PACKAGE=Python-2.7.9
+	MESA_PACKAGE=mesa-13.0.1
+	CGAL_PACKAGE=CGAL-4.8.1
+	PARAVIEW_PACKAGE=ParaView-v5.4.0
+	BOOST_PACKAGE=boost_1_55_0
+	FFTW_PACKAGE=fftw-3.3.5
+	OPENMPI_PACKAGE=openmpi-2.1.1
 	SCOTCH_PACKAGE=scotch_6.0.3
 	QT_PACKAGE=qt-4.8.7
 	CMAKE_PACKAGE=cmake-3.2.1
@@ -114,7 +132,7 @@ case "${OpenFOAM_VERSION}" in
 	QT_PACKAGE=qt-4.8.7
 	CMAKE_PACKAGE=cmake-3.2.1
 	;;
-    OpenFOAM-v1706)
+    OpenFOAM-v1706* )
 	GCC_PACKAGE=gcc-4.8.5
 	GMP_PACKAGE=gmp-6.1.0
 	MPFR_PACKAGE=mpfr-3.1.4

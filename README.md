@@ -23,6 +23,6 @@ Edit these files appropriately first.
 
 ## Source files
 
-Source files of OpenFOAM, ThirdParty and related third-pary packages listed in etc/version and system/{SYSTEM}/version are automatically download from URLs listed in etc/url and て/{SYSTEM}/url.
+Source files of OpenFOAM, ThirdParty and related third-pary packages listed in etc/version and system/{SYSTEM}/version are automatically download from URLs listed in etc/url and etc/{SYSTEM}/url.
 
 If download from the Internet is disabled, locate source files in 'download' directory in advance.

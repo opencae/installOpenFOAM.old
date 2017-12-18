@@ -83,9 +83,9 @@
 -boostPACKAGE=${boost_version:-boost-system}
 -gmpPACKAGE=${gmp_version:-gmp-system}
 -mpfrPACKAGE=${mpfr_version:-mpfr-system}
-+boostPACKAGE=boost_1_61_0
-+gmpPACKAGE=gmp-6.1.2
-+mpfrPACKAGE=mpfr-3.1.5
++boostPACKAGE="boost_1_55_0"
++gmp_version="gmp-6.1.0"
++mpfr_version="mpfr-3.1.4"
  cgalPACKAGE=$cgal_version
  
  #------------------------------------------------------------------------------
@@ -99,10 +99,10 @@
 -mpfrPACKAGE=${mpfr_version:-mpfr-system}
 -mpcPACKAGE=${mpc_version:-mpc-system}
 -gccPACKAGE=$gcc_version
-+gmpPACKAGE=gmp-6.1.2
-+mpfrPACKAGE=mpfr-3.1.5
-+mpcPACKAGE=mpc-1.0.3
-+gccPACKAGE=gcc-4.8.5
++gmpPACKAGE="gmp-6.1.0"
++mpfrPACKAGE="mpfr-3.1.4"
++mpcPACKAGE="mpc-1.0.3"
++gccPACKAGE="gcc-4.8.5"
  
  #------------------------------------------------------------------------------
  # Run from third-party directory only
@@ -124,7 +124,7 @@
  #
  #------------------------------------------------------------------------------
 -qtVERSION=4.7.3
-+qtVERSION=4.8.7
++qtVERSION="4.8.7"
  qtTYPE=qt-everywhere-opensource-src
  #------------------------------------------------------------------------------
  # run from third-party directory only

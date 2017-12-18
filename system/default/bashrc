@@ -4,7 +4,7 @@
 FOAM_INST_DIR=${HOME}/OpenFOAM
 
 # Build ParaView
-unset BUILD_PARAVIEW
+#unset BUILD_PARAVIEW
 #BUILD_PARAVIEW=yes
 
 # Download Only
@@ -12,7 +12,7 @@ unset DOWNLOAD_ONLY
 #DOWNLOAD_ONLY=yes
 
 # Build foamyHexMesh
-unset BUILD_FOAMY_HEX_MESH
+#unset BUILD_FOAMY_HEX_MESH
 #BUILD_FOAMY_HEX_MESH=yes
 
 # Number of processors

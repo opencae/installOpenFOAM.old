@@ -37,7 +37,6 @@ error()
     exit 1
 }
 
-
 #
 # Download file $1 from url $2 into download/ directory
 #
@@ -165,7 +164,6 @@ v3.0+ \
 4.1 \
 v1606+ \
 v1612+ \
-v1706 \
 
 	do
 	    local LINK_PATH=$FOAM_INST_DIR/ThirdParty-$LINK_VERSION/platforms/$ARCH/$PACKAGE
@@ -328,6 +326,7 @@ build_Gcc()
 
     local MPC_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH/$MPC_PACKAGE
     if [ ! -d $MPC_ARCH_PATH ];then
+	local MPC_PACKAGE=${MPC_ARCH_PATH##*/}
 	local URL="$(mpc_url $MPC_PACKAGE)"
 	link_or_download $MPC_PACKAGE "$WM_ARCH" "$URL" $PATH_TO_THIRDPARTY_MPC
     else
@@ -349,7 +348,7 @@ build_Gcc()
 	    link_or_download $GCC_PACKAGE "$WM_ARCH" "$URL" $PATH_TO_THIRDPARTY_GCC
         fi
 
-	if [ -z "$DOWNLOAD_ONLY" ];then
+	if [ -n "$DOWNLOAD_ONLY" ];then
 	    if [ $COMPILER_NAME != "Gcc" -o $COMPILER_TYPE = "system" ];then
 		# make dummy directory
 		[ ! -d $GCC_ARCH_PATH ] && mkdir -p $GCC_ARCH_PATH
@@ -532,7 +531,7 @@ build_Qt()
 build_Python()
 {
     [ -n "$BUILD_PARAVIEW" ] || return 0
-    [ $PYTHON_TYPE = "system" ] && return 0
+    [ "$PYTHON_TYPE" = "system" ] && return 0
 
     PYTHON_VERSION=${PYTHON_PACKAGE#Python-}
 
@@ -631,7 +630,7 @@ build_ThirdParty()
 	local sentinel="DONE_BUILD_THIRDPARTY_${COMPILER_TYPE}_${COMPILER}_${COMPILE_OPTION}_${PRECISION_OPTION}_${LABEL_SIZE}_${ARCH_OPTION}_${MPLIB}"
 	if [ ! -f $sentinel ];then
 	    . $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
-	    [ $PLUS_VERSION -eq 1 ] && options="-k"
+	    [ -n "$PLUS_VERSION" ] && options="-k"
 	    time ./Allwmake $options && touch $sentinel
 	else
 	    echo "$WM_THIRD_PARTY_DIR is already built"
@@ -660,7 +659,7 @@ build_OpenFOAM()
 		unset FOAMY_HEX_MESH
 	    fi
 
-	    [ $PLUS_VERSION -eq 1 ] && options="-k"
+	    [ -n "$PLUS_VERSION" ] && options="-k"
 	    time ./Allwmake $options && touch $sentinel
 	else
 	    echo "$WM_PROJECT_DIR is already built"
@@ -678,7 +677,7 @@ LANG=C
 #- Default
 PATH_TO_THIRDPARTY_GCC=auto
 PATH_TO_THIRDPARTY_GMP=auto
-PATH_TO_THIRDPARTY_MPFR=auto
+PATH_TO_THIRDPARTY_MPC=auto
 PATH_TO_THIRDPARTY_MPFR=auto
 PATH_TO_THIRDPARTY_BOOST=auto
 PATH_TO_THIRDPARTY_CGAL=auto
@@ -779,14 +778,18 @@ do
     log=log.${OpenFOAM_BUILD_OPTION}
     [ -n "$DOWNLOAD_ONLY" ] && log="${log},DOWNLOAD_ONLY"
 
-    OpenFOAM_VERSION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*OpenFOAM_VERSION=\([^,]*\)[,$].*"/"\1"/`
-    COMPILER_TYPE=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER_TYPE=\([^,]*\)[,$].*"/"\1"/`
-    COMPILER=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER=\([^,]*\)[,$].*"/"\1"/`
-    ARCH_OPTION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*ARCH_OPTION=\([^,]*\)[,$].*"/"\1"/`
-    PRECISION_OPTION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*PRECISION_OPTION=\([^,]*\)[,$].*"/"\1"/`
-    LABEL_SIZE=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*LABEL_SIZE=\([^,]*\)[,$].*"/"\1"/`
-    COMPILE_OPTION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILE_OPTION=\([^,]*\)[,$].*"/"\1"/`
-    MPLIB=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*MPLIB=\([^,]*\)"/"\1"/`
+    OpenFOAM_VERSION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*OpenFOAM_VERSION=\([^,]*\).*$"/"\1"/`
+    COMPILER_TYPE=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER_TYPE=\([^,]*\).*"/"\1"/`
+    COMPILER=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER=\([^,]*\).*"/"\1"/`
+    ARCH_OPTION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*ARCH_OPTION=\([^,]*\).*"/"\1"/`
+    PRECISION_OPTION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*PRECISION_OPTION=\([^,]*\).*"/"\1"/`
+    LABEL_SIZE=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*LABEL_SIZE=\([^,]*\).*"/"\1"/`
+    COMPILE_OPTION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILE_OPTION=\([^,]*\).*"/"\1"/`
+    MPLIB=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*MPLIB=\([^,]*\).*"/"\1"/`
+    BUILD_PARAVIEW=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*BUILD_PARAVIEW=\([^,]*\).*"/"\1"/`
+    [ "$BUILD_PARAVIEW" != "1" ] && unset BUILD_PARAVIEW
+    BUILD_FOAMY_HEX_MESH=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[^,]*BUILD_FOAMY_HEX_MESH=\([^,]*\).*$"/"\1"/`
+    [ "$BUILD_FOAMY_HEX_MESH" != "1" ] &&  unset BUILD_FOAMY_HEX_MESH
 
     case "$OpenFOAM_VERSION" in
 	OpenFOAM-v[0-9]*)
@@ -795,7 +798,7 @@ do
 	    ;;
 	OpenFOAM-[0-9]*)
 	    FOAM_VERSION=${OpenFOAM_VERSION#OpenFOAM-}
-	    PLUS_VERSION=0
+	    unset PLUS_VERSION
 	    ;;
 	*)
 	    echo "Unknown OpenFOAM version: $OpenFOAM_VERSION"
@@ -876,7 +879,7 @@ WM_MPLIB=$MPLIB\
 
 	    $function 2>&1 || error "$function failed"
 
-	    if [ -z "$DOWNLOAD_ONLY" -a $function = "build_Gcc" ];then
+	    if [ ! -n "$DOWNLOAD_ONLY" -a $function = "build_Gcc" ];then
 		. $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
 		echo "Build using $WM_NCOMPPROCS processor(s)."
 	    fi
