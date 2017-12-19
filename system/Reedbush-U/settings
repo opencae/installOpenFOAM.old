@@ -97,6 +97,9 @@ case $MPLIB in
     INTELMPI2017_3_196)
 	module load intel-mpi/2017.3.196
 	;;
+    INTELMPI2018_1_163)
+	module load intel-mpi/2018.1.163
+	;;
     MPIMVAPICH2_2_2)
 	case "$COMPILER" in
 	    Gcc*)
