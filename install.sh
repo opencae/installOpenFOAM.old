@@ -341,28 +341,32 @@ build_Gcc()
     fi
 
     local GCC_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH/$GCC_PACKAGE
-    echo $GCC_ARCH_PATH
-    if [ ! -d $GCC_ARCH_PATH  ];then
-	if [ $COMPILER_NAME = "Gcc" -a $COMPILER_TYPE != "system" ];then
+    if [ ! -d $GCC_ARCH_PATH -o ! -d $GMP_ARCH_PATH  -o ! -d $MPFR_ARCH_PATH -o ! -d $MPC_ARCH_PATH ];then
+	if [ $COMPILER_NAME = "Gcc" -a  $COMPILER_TYPE != "system" ];then
 	    local URL="$(gcc_url $GCC_PACKAGE)"
 	    link_or_download $GCC_PACKAGE "$WM_ARCH" "$URL" $PATH_TO_THIRDPARTY_GCC
         fi
 
-	if [ -n "$DOWNLOAD_ONLY" ];then
+	[ -n "$DOWNLOAD_ONLY" ] && return 0
+
 	    if [ $COMPILER_NAME != "Gcc" -o $COMPILER_TYPE = "system" ];then
-		# make dummy directory
-		[ ! -d $GCC_ARCH_PATH ] && mkdir -p $GCC_ARCH_PATH
-	    fi
-	    (cd $WM_THIRD_PARTY_DIR
-		. $WM_PROJECT_DIR/etc/bashrc $foam_settings \
-		    foamCompiler=system WM_COMPILER_TYPE=system WM_COMPILER=Gcc
-		
-		chmod +x makeGcc
-		time bash -e ./makeGcc $GMP_PACKAGE $MPFR_PACKAGE $MPC_PACKAGE $GCC_PACKAGE
-	    )
-	    if [ $COMPILER_NAME != "Gcc" -o $COMPILER_TYPE = "system" ];then
-		[ -z "$(ls -A $GCC_ARCH_PATH/)" ] && rmdir $GCC_ARCH_PATH
-	    fi
+	    # make dummy directory
+	    [ ! -d $GCC_ARCH_PATH ] && mkdir -p $GCC_ARCH_PATH
+	fi
+	(cd $WM_THIRD_PARTY_DIR
+	    . $WM_PROJECT_DIR/etc/bashrc $foam_settings \
+		foamCompiler=system WM_COMPILER_TYPE=system WM_COMPILER=Gcc
+
+	    # make dummy directory
+	    [ ! -d ${GCC_ARCH_PATH##*/} ] && mkdir ${GCC_ARCH_PATH##*/}
+
+	    chmod +x makeGcc
+	    time bash -e ./makeGcc $GMP_PACKAGE $MPFR_PACKAGE $MPC_PACKAGE $GCC_PACKAGE
+
+	    [ -z "$(ls -A ${GCC_ARCH_PATH##*/})" ] && rmdir ${GCC_ARCH_PATH##*/}
+	)
+	if [ $COMPILER_NAME != "Gcc" -o $COMPILER_TYPE = "system" ];then
+	    [ -z "$(ls -A $GCC_ARCH_PATH/)" ] && rmdir $GCC_ARCH_PATH
 	fi
     else
 	echo "$GCC_PACKAGE package is already installed in $GCC_ARCH_PATH"
@@ -776,7 +780,6 @@ do
 
     #- Log file name
     log=log.${OpenFOAM_BUILD_OPTION}
-    [ -n "$DOWNLOAD_ONLY" ] && log="${log},DOWNLOAD_ONLY"
 
     OpenFOAM_VERSION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*OpenFOAM_VERSION=\([^,]*\).*$"/"\1"/`
     COMPILER_TYPE=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER_TYPE=\([^,]*\).*"/"\1"/`
@@ -790,6 +793,8 @@ do
     [ "$BUILD_PARAVIEW" != "1" ] && unset BUILD_PARAVIEW
     BUILD_FOAMY_HEX_MESH=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[^,]*BUILD_FOAMY_HEX_MESH=\([^,]*\).*$"/"\1"/`
     [ "$BUILD_FOAMY_HEX_MESH" != "1" ] &&  unset BUILD_FOAMY_HEX_MESH
+    DOWNLOAD_ONLY=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[^,]*DOWNLOAD_ONLY=\([^,]*\).*$"/"\1"/`
+    [ "$DOWNLOAD_ONLY" != "1" ] &&  unset DOWNLOAD_ONLY
 
     case "$OpenFOAM_VERSION" in
 	OpenFOAM-v[0-9]*)
