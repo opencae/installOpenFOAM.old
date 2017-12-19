@@ -125,5 +125,5 @@ mesa_url()
 {
     local PACKAGE=$1
     local VERSION=${PACKAGE##*-}
-    echo https://mesa.freedesktop.org/archive/${VERSION}/mesa-${VERSION}.tar.xz
+    echo https://mesa.freedesktop.org/archive/older-versions/13.x/${VERSION}/mesa-${VERSION}.tar.xz
 }
