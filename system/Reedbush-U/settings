@@ -9,27 +9,17 @@ case $COMPILER_TYPE in
     system)
 	case "$COMPILER" in
 	    Gcc4_8_5)
+		# system default version
 		;;
-	    Gcc5_4_0)
-		module load gnu/gcc_5.4.0
+	    Gcc*)
+		version=${COMPILER#Gcc}
+		version=${version//_/.}
+		module load gnu/gcc_$version
 		;;
-	    Icc16_0_3_210)
-		module load intel/16.0.3.210
-		;;
-	    Icc16_0_4_258)
-		module load intel/16.0.4.258
-		;;
-	    Icc17_0_0_098)
-		module load intel/17.0.0.098
-		;;
-	    Icc17_0_1_132)
-		module load intel/17.0.1.132
-		;;
-	    Icc17_0_2_174)
-		module load intel/17.0.2.174
-		;;
-	    Icc17_0_4_196)
-		module load intel/17.0.4.196
+	    Icc*)
+		version=${COMPILER#Icc}
+		version=${version//_/.}
+		module load intel/$version
 		;;
 	    *)
 		;;
@@ -40,65 +30,27 @@ case $COMPILER_TYPE in
 esac
 
 case $MPLIB in
-    SYSTEMOPENMPI2_0_2)
+    SYSTEMOPENMPI*)
+	version=${MPLIB#SYSTEMOPENMPI}
+	version=${version//_/.}
 	case "$COMPILER" in
 	    Gcc*)
-		module load openmpi/2.0.2/gnu
+		module load openmpi/$version/gnu
 		;;
 	    Icc*)
-		module load openmpi/2.0.2/intel
+		module load openmpi/$version/intel
 		;;
 	esac	
 	;;
-    SYSTEMOPENMPI2_0_3)
-	case "$COMPILER" in
-	    Gcc*)
-		module load openmpi/2.0.3/gnu
-		;;
-	    Icc*)
-		module load openmpi/2.0.3/intel
-		;;
-	esac	
+    SGIMPI*)
+	version=${MPLIB#SGIMPI}
+	version=${version//_/.}
+	module load mpt/$version
 	;;
-    SYSTEMOPENMPI2_1_1)
-	case "$COMPILER" in
-	    Gcc*)
-		module load openmpi/2.1.1/gnu
-		;;
-	    Icc*)
-		module load openmpi/2.1.1/intel
-		;;
-	esac	
-	;;
-    SGIMPI2_14)
-	module load mpt/2.14
-	;;
-    SGIMPI2_15)
-	module load mpt/2.15
-	;;
-    SGIMPI2_16)
-	module load mpt/2.16
-	;;
-    INTELMPI5_1_3_210)
-	module load intel-mpi/5.1.3.210
-	;;
-    INTELMPI5_1_3_258)
-	module load intel-mpi/5.1.3.258
-	;;
-    INTELMPI2017_0_098)
-	module load intel-mpi/2017.0.098
-	;;
-    INTELMPI2017_1_132)
-	module load intel-mpi/2017.1.132
-	;;
-    INTELMPI2017_2_174)
-	module load intel-mpi/2017.2.174
-	;;
-    INTELMPI2017_3_196)
-	module load intel-mpi/2017.3.196
-	;;
-    INTELMPI2018_1_163)
-	module load intel-mpi/2018.1.163
+    INTELMPI*)
+	version=${MPLIB#INTELMPI}
+	version=${version//_/.}
+	module load intel-mpi/$version
 	;;
     MPIMVAPICH2_2_2)
 	case "$COMPILER" in
@@ -113,23 +65,14 @@ case $MPLIB in
 	export MPI_ROOT=${MPI_ROOT/\/bin\/mpirun/}
 	;;
     HPCXMPI1_8_0)
+	version=${MPLIB#HPCXMPI}
+	version=${version//_/.}
 	case "$COMPILER" in
 	    Gcc*)
-		module load hpcx/1.8.0/gnu
+		module load hpcx/$version/gnu
 		;;
 	    Icc*)
-		module load hpcx/1.8.0/intel
-		;;
-	esac	
-	export MPI_ROOT=$MPI_HOME
-	;;
-    HPCXMPI1_9_7)
-	case "$COMPILER" in
-	    Gcc*)
-		module load hpcx/1.9.7/gnu
-		;;
-	    Icc*)
-		module load hpcx/1.9.7/intel
+		module load hpcx/$version/intel
 		;;
 	esac	
 	export MPI_ROOT=$MPI_HOME
