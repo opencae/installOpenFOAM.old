@@ -32,6 +32,8 @@ do
 --exclude=PATCHED_DURING_OPENFOAM_BUILD \
 --exclude=linux64*_* \
 --exclude=00-ERRATA.txt \
+--exclude=lnInclude \
+--exclude=mplib*_[0-9]* \
 ) \
 | grep -v "^diff" \
 | awk '/^[+-][+-][+-]/ { printf "%s %s\t1970-01-01 00:00:00.000000000 +0000\n",$1,$2;next} {print $0}' \
@@ -72,6 +74,8 @@ do
 --exclude=*.tmp \
 --exclude=DONE_* \
 --exclude=PATCHED_DURING_OPENFOAM_BUILD \
+--exclude=lnInclude \
+--exclude=Make \
 $option
 ) \
 | grep -v "^diff" \
