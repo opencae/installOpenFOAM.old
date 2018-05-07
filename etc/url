@@ -34,12 +34,16 @@ thirdparty_url()
 gcc_url()
 {
     local PACKAGE=$1
-    if [ "$PACKAGE" = "gcc-6.4.0" ]
-    then
-	echo http://ftp.tsukuba.wide.ad.jp/software/gcc/releases/${PACKAGE}/${PACKAGE}.tar.xz
-    else
-	echo http://ftp.tsukuba.wide.ad.jp/software/gcc/releases/${PACKAGE}/${PACKAGE}.tar.bz2
-    fi
+
+    case "${PACKAGE}" in
+	gcc-6.4.0|gcc-7.2.0|gcc-7.3.0)
+	    suffix=xz
+	    ;;
+	*)
+	    suffix=bz2
+	    ;;
+    esac
+    echo http://ftp.tsukuba.wide.ad.jp/software/gcc/releases/${PACKAGE}/${PACKAGE}.tar.${suffix}
 }
 
 gmp_url()
@@ -100,11 +104,17 @@ qt_url()
     local PACKAGE=$1
     local VERSION=${PACKAGE##*-}
     local MAJOR_VERSION=`echo ${VERSION} | cut -d '.' -f 1,2`
-    if [ "${MAJOR_VERSION}" = "4.7" ];then
-	echo http://master.qt.io/archive/qt/${MAJOR_VERSION}/qt-everywhere-opensource-src-${VERSION}.tar.gz
-    else 
-	echo http://master.qt.io/official_releases/qt/${MAJOR_VERSION}/${VERSION}/qt-everywhere-opensource-src-${VERSION}.tar.gz
-    fi
+    case "${MAJOR_VERSION}" in
+	4.7)
+	    echo http://master.qt.io/archive/qt/${MAJOR_VERSION}/qt-everywhere-opensource-src-${VERSION}.tar.gz
+	    ;;
+	4.8)
+	    echo http://master.qt.io/official_releases/qt/${MAJOR_VERSION}/${VERSION}/qt-everywhere-opensource-src-${VERSION}.tar.gz
+	    ;;
+	5.*)
+	    echo http://master.qt.io/official_releases/qt/${MAJOR_VERSION}/${VERSION}/single/qt-everywhere-opensource-src-${VERSION}.tar.xz
+	    ;;
+    esac
 }
 
 python_url()
@@ -125,5 +135,20 @@ mesa_url()
 {
     local PACKAGE=$1
     local VERSION=${PACKAGE##*-}
-    echo https://mesa.freedesktop.org/archive/older-versions/13.x/${VERSION}/mesa-${VERSION}.tar.xz
+    local MAJOR_VERSION=`echo ${VERSION} | cut -d '.' -f 1`
+    case "${MAJOR_VERSION}" in
+	17)
+	    echo https://mesa.freedesktop.org/archive/mesa-${VERSION}.tar.xz
+	    ;;
+	*)
+	    echo https://mesa.freedesktop.org/archive/older-versions/${MAJOR_VERSION}.x/${VERSION}/mesa-${VERSION}.tar.xz
+	    ;;
+    esac
+}
+
+zlib_url()
+{
+    local PACKAGE=$1
+    local VERSION=${PACKAGE##*-}
+    echo https://www.zlib.net/zlib-${VERSION}.tar.gz
 }
