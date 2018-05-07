@@ -1,0 +1,10 @@
+#!/bin/bash
+#PJM -L "rscgrp=ito-ss-dbg"
+#PJM -L "rscunit=ito-a"
+#PJM -L "vnode=1"
+#PJM -L "vnode-core=36"
+#PJM -L "elapse=1:00:00"
+#PJM --mpi "proc=36"
+#PJM -S
+
+./install.sh >& log.install.sh.${PJM_JOBID}

@@ -1,0 +1,41 @@
+#!/bin/sh
+
+module purge
+
+case $COMPILER_TYPE in
+    ThirdParty)
+	;;
+    system)
+	case "$COMPILER" in
+	    Gcc4_8_5)
+		# system default version
+		;;
+	    Icc16_0_4_258)
+		module load intel/2016
+		;;
+	    Icc17_0_4_196)
+		module load intel/2017
+		;;
+	    Icc18_1_163)
+		module load intel/2018
+		;;
+	    *)
+		;;
+	esac	
+	;;
+    *)
+	;;
+esac
+
+case $MPLIB in
+    SYSTEMOPENMPI*)
+	version=${MPLIB#SYSTEMOPENMPI}
+	version=${version//_/.}
+	module load openmpi/$version
+	;;
+    INTELMPI*)
+	export MPI_ROOT=$I_MPI_ROOT
+	;;
+    *)
+	;;
+esac

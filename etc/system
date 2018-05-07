@@ -16,6 +16,9 @@ case "$hostname" in
     login-*ff*|[a-h][0-9]*|server-[0-9]*_d[0-9]*_d[0-9]*-ib_)
 	SYSTEM=FOCUS
 	;;
+    ito-[0-9]*|sca[0-9]*.kyushu-u.sc_*)
+	SYSTEM=ITO
+	;;
     *)
 	SYSTEM=default
 	;;
