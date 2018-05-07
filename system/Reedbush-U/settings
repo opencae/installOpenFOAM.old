@@ -35,10 +35,10 @@ case $MPLIB in
 	version=${version//_/.}
 	case "$COMPILER" in
 	    Gcc*)
-		module load openmpi/$version/gnu
+		module load openmpi/mxm/$version/gnu
 		;;
 	    Icc*)
-		module load openmpi/$version/intel
+		module load openmpi/mxm/$version/intel
 		;;
 	esac	
 	;;
@@ -52,19 +52,21 @@ case $MPLIB in
 	version=${version//_/.}
 	module load intel-mpi/$version
 	;;
-    MPIMVAPICH2_2_2)
+    MPIMVAPICH2*)
+	version=${MPLIB#MPIMVAPICH}
+	version=${version//_/.}
 	case "$COMPILER" in
 	    Gcc*)
-		module load mvapich2/2.2/gnu
+		module load mvapich2/mxm/$version/gnu
 		;;
 	    Icc*)
-		module load mvapich2/2.2/intel
+		module load mvapich2/mxm/$version/intel
 		;;
 	esac	
-	MPI_ROOT=`which mpirun`
-	export MPI_ROOT=${MPI_ROOT/\/bin\/mpirun/}
+	MPI_ROOT=`which mpicc`
+	export MPI_ROOT=${MPI_ROOT/\/bin\/mpicc/}
 	;;
-    HPCXMPI1_8_0)
+    HPCXMPI*)
 	version=${MPLIB#HPCXMPI}
 	version=${version//_/.}
 	case "$COMPILER" in
