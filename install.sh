@@ -106,18 +106,7 @@ patch_source()
 		else
 		    echo "apply patch $patchFile for $PACKAGE"
 		    touch "$sentinel"
-		    sed \
-	-e s/"^\(+boost_version=\).*"/"\1"\"$BOOST_PACKAGE\"/ \
-	-e s/"^\(+cgal_version=\).*"/"\1"\"$CGAL_PACKAGE\"/ \
-	-e s/"^\(+cmakePACKAGE=\).*"/"\1"\"$CMAKE_PACKAGE\"/ \
-	-e s/"^\(+fftw_version=\).*"/"\1"\"$FFTW_PACKAGE\"/ \
-	-e "s/^\(+gccPACKAGE=\).*"/"\1"\"$GCC_PACKAGE\"/ \
-	-e "s/^\(+gmpPACKAGE=\).*"/"\1"\"$GMP_PACKAGE\"/ \
-	-e "s/^\(+mpcPACKAGE=\).*"/"\1"\"$MPC_PACKAGE\"/ \
-	-e "s/^\(+mpfrPACKAGE=\).*"/"\1"\"$MPFR_PACKAGE\"/ \
-	-e s/"^\(+qtVERSION=\).*"/"\1"\"${QT_PACKAGE#qt-}\"/ \
-			$patchFile | \
-			patch -b -l -p1 2>&1 | tee $sentinel
+		    patch -b -l -p1 < $patchFile 2>&1 | tee $sentinel
 		fi
 	    )
 	fi
@@ -144,6 +133,36 @@ patch_source()
 	    )
 	fi
     done
+
+    foamConfigurePathsOptions=""
+    case "$FOAM_VERSION" in
+	v17*)
+	    foamConfigurePathsOptions="\
+-boost $BOOST_PACKAGE \
+-cgal $CGAL_PACKAGE \
+-cmake $CMAKE_PACKAGE \
+-fftw $FFTW_PACKAGE \
+-mesa $MESA_PACKAGE \
+-openmpi $OPENMPI_PACKAGE \
+$GMP_PACKAGE \
+$MPFR_PACKAGE \
+$MPC_PACKAGE"
+	    ;;
+    esac
+
+    case "$FOAM_VERSION" in
+	v1712*)
+	    foamConfigurePathsOptions="\
+$foamConfigurePathsOptions \
+-kahip $KAHIP_PACKAGE"
+	    ;;
+    esac
+
+    (cd $WM_PROJECT_DIR
+	bin/tools/foamConfigurePaths \
+            --scotchVersion $SCOTCH_PACKAGE \
+	    --paraviewVersion ${PARAVIEW_PACKAGE#ParaView-}
+	)
 }
 
 link_ThirdParty_package()
@@ -154,17 +173,19 @@ link_ThirdParty_package()
 
     if [ $PATH_TO_THIRDPARTY_PACKAGE = "auto" ];then
 	for LINK_VERSION in \
-2.3.0 \
-2.3.1 \
-2.4.0 \
-3.0.0 \
-3.0.1 \
-v3.0+ \
-4.0 \
-4.1 \
-v1606+ \
+v1712 \
+v1706 \
+5.0 \
 v1612+ \
-
+v1606+ \
+4.1 \
+4.0 \
+v3.0+ \
+3.0.1 \
+3.0.0 \
+2.4.0 \
+2.3.1 \
+2.3.0
 	do
 	    local LINK_PATH=$FOAM_INST_DIR/ThirdParty-$LINK_VERSION/platforms/$ARCH/$PACKAGE
 	    if [ -d $FOAM_INST_DIR/ThirdParty-$LINK_VERSION/platforms/$ARCH/$PACKAGE ];then
@@ -286,7 +307,8 @@ download_Boost()
 
 build_Gcc()
 {
-    . $WM_PROJECT_DIR/etc/bashrc \
+    source $WM_PROJECT_DIR/etc/bashrc \
+	$foam_settings \
 	foamCompiler=system WM_COMPILER_TYPE=system WM_COMPILER=Gcc WM_MPLIB=dummy
 	
     [ -d  $WM_THIRD_PARTY_DIR/platforms ] \
@@ -354,14 +376,15 @@ build_Gcc()
 	    [ ! -d $GCC_ARCH_PATH ] && mkdir -p $GCC_ARCH_PATH
 	fi
 	(cd $WM_THIRD_PARTY_DIR
-	    . $WM_PROJECT_DIR/etc/bashrc $foam_settings \
+	    source $WM_PROJECT_DIR/etc/bashrc $foam_settings \
+		$foam_settings \
 		foamCompiler=system WM_COMPILER_TYPE=system WM_COMPILER=Gcc
 
 	    # make dummy directory
 	    [ ! -d ${GCC_ARCH_PATH##*/} ] && mkdir ${GCC_ARCH_PATH##*/}
 
 	    chmod +x makeGcc
-	    time bash -e ./makeGcc $GMP_PACKAGE $MPFR_PACKAGE $MPC_PACKAGE $GCC_PACKAGE
+	    bash -e ./makeGcc $GMP_PACKAGE $MPFR_PACKAGE $MPC_PACKAGE $GCC_PACKAGE
 
 	    [ -z "$(ls -A ${GCC_ARCH_PATH##*/})" ] && rmdir ${GCC_ARCH_PATH##*/}
 	)
@@ -410,6 +433,8 @@ download_OpenMPI()
 	echo "Skip download_openmpi since MPLIB is not OPENMPI"
 	return 0
     fi
+
+    source $WM_PROJECT_DIR/etc/bashrc $foam_settings
 
     if [ ! -d $MPI_ARCH_PATH ];then
 	local PACKAGE=${MPI_ARCH_PATH##*/}
@@ -466,7 +491,7 @@ build_CMake()
 	if [ ! -d $ARCH_PATH  ];then
 	    (cd $WM_THIRD_PARTY_DIR
 		chmod +x makeCmake
-		time ./makeCmake $PACKAGE
+		./makeCmake $PACKAGE
 	    )
 	fi
     else
@@ -475,6 +500,35 @@ build_CMake()
 
     export PATH=$ARCH_PATH/bin:$PATH
     which cmake
+}
+
+build_zlib()
+{
+    [ -n "$BUILD_PARAVIEW" ] || return 0
+    [ "$ZLIB_TYPE" = "system" ] && return 0
+
+    local PACKAGE=$ZLIB_PACKAGE
+
+    local ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$PACKAGE
+    if [ ! -d $ARCH_PATH  ];then
+	link_to_another_compiler $WM_COMPILER $PACKAGE || \
+	    link_or_download $PACKAGE "$WM_ARCH$WM_COMPILER" \
+	    "$(zlib_url $PACKAGE)" "$PATH_TO_THIRDPARTY_ZLIB"
+
+	[ -n "$DOWNLOAD_ONLY" ] && return 0
+
+	if [ ! -d $ARCH_PATH  ];then
+	    (cd $WM_THIRD_PARTY_DIR
+		./configure
+		make -j $WM_NCOMPPROCS && make install
+	    )
+	fi
+    else
+	echo "$PACKAGE is already installed in $ARCH_PATH"
+    fi
+
+    export ZLIB_CFLAGS=" "
+    export ZLIB_LIBS="-L$ARCH_PATH/lib -lz"
 }
 
 build_Mesa()
@@ -494,7 +548,7 @@ build_Mesa()
 	if [ ! -d $ARCH_PATH  ];then
 	    (cd $WM_THIRD_PARTY_DIR
 		chmod +x makeMesa
-		time ./makeMesa $MESA_PACKAGE
+		./makeMesa $MESA_PACKAGE
 	    )
 	fi
     else
@@ -522,9 +576,18 @@ build_Qt()
 
 	if [ ! -d $ARCH_PATH ];then
 	    (cd $WM_THIRD_PARTY_DIR
-		. $WM_PROJECT_DIR/etc/bashrc $foam_settings
+		source $WM_PROJECT_DIR/etc/bashrc $foam_settings
 		chmod +x makeQt
-		time ./makeQt
+		case "$FOAM_VERSION" in
+		    v1706* | v1712* )
+			makeQt_options=${PACKAGE}
+			;;
+		    *)
+			makeQt_options=""
+			;;
+		esac
+		  
+		./makeQt $makeQt_options
 	    )
 	fi
     else
@@ -554,7 +617,7 @@ build_Python()
 	    (
 		cd $WM_THIRD_PARTY_DIR/$PACKAGE
 		./configure --prefix=$ARCH_PATH --enable-shared --enable-unicode=ucs4
-		time make -j $WM_NCOMPPROCS && make altinstall
+		make -j $WM_NCOMPPROCS && make altinstall
 		(cd $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$PACKAGE/bin
 		    ln -s python$PYTHON_MAJOR_VERSION python
 		)
@@ -571,6 +634,7 @@ build_ParaView()
 
     local PACKAGE=$PARAVIEW_PACKAGE
     local VERSION=${PARAVIEW_PACKAGE#ParaView-}
+    [ $VERSION = "4.1.0" ] && return 0
     local QMAKE_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$QT_PACKAGE/bin/qmake
     local PYTHON_VERSION=${PYTHON_PACKAGE#Python-}
     local PYTHON_MAJOR_VERSION=${PYTHON_VERSION%.*}
@@ -590,34 +654,39 @@ build_ParaView()
 		(cd $WM_THIRD_PARTY_DIR
 		    source $WM_PROJECT_DIR/etc/bashrc $foam_settings
 			
-		    makeParaViewOptions="-qt \
--$QT_PACKAGE \
+		    if [ $PYTHON_TYPE = "ThirdParty" ];then
+			export PYTHON_INCLUDE=$PYTHON_ARCH_PATH/include/python$PYTHON_MAJOR_VERSION
+			export PATH=$PYTHON_ARCH_PATH/bin:$PATH
+			local PYTHON_OPTION="-python-lib $PYTHON_ARCH_PATH/lib/libpython$PYTHON_MAJOR_VERSION.so"
+    		    fi
+
+#-$QT_PACKAGE \
+#-mesa \
+#-verbose \
+		    makeParaViewOptions="$makeParaViewOptions \
+-no-qt \
 -cmake $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$CMAKE_PACKAGE \
 -qmake $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$QT_PACKAGE/bin/qmake \
-"
-		    if [ $VERSION != "4.1.0" ];then
-			if [ $PYTHON_TYPE = "ThirdParty" ];then
-			    export PYTHON_INCLUDE=$PYTHON_ARCH_PATH/include/python$PYTHON_MAJOR_VERSION
-			    export PATH=$PYTHON_ARCH_PATH/bin:$PATH
-			    local PYTHON_OPTION="-python-lib $PYTHON_ARCH_PATH/lib/libpython$PYTHON_MAJOR_VERSION.so"
-    			fi
-
-			makeParaViewOptions="$makeParaViewOptions
 -mpi \
--mesa \
+-python $PYTHON_OPTION \
 -mesa-include $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$MESA_PACKAGE/include \
--mesa-lib $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$MESA_PACKAGE/lib/libOSMesa.so
--python $PYTHON_OPTION"
+-mesa-lib $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$MESA_PACKAGE/lib/libOSMesa.so \
+"
 
-			local makeParaView=makeParaView
-			if [ -x makeParaView4 ];then
-			    makeParaView=makeParaView4
-			fi
-			chmod +x $makeParaView
-			command="./$makeParaView $makeParaViewOptions"
-			echo $command
-			time $command
+		    local makeParaView=makeParaView
+		    if [ -x makeParaView4 ];then
+			makeParaView=makeParaView4
 		    fi
+		    chmod +x $makeParaView
+		    for buildStageOption in -config -make -install
+		    do
+			local sentinel="${makeParaView}${buildStageOption}-${foam_settings// /-}.done"
+			if [ ! -f $sentinel ];then
+			    command="./$makeParaView $makeParaViewOptions $buildStageOption"
+			    echo $command
+			    $command && touch $sentinel
+			fi
+		    done
 		)
 	    fi
 	fi
@@ -631,15 +700,16 @@ build_ThirdParty()
     [ -n "$DOWNLOAD_ONLY" ] && return 0
 
     (cd $WM_THIRD_PARTY_DIR
-	local sentinel="DONE_BUILD_THIRDPARTY_${COMPILER_TYPE}_${COMPILER}_${COMPILE_OPTION}_${PRECISION_OPTION}_${LABEL_SIZE}_${ARCH_OPTION}_${MPLIB}"
+	local sentinel="Allwmake-${foam_settings// /-}.done"
 	if [ ! -f $sentinel ];then
-	    . $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
+	    source $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
+	    chmod +x make[a-zA-Z0-9]*
 	    [ -n "$PLUS_VERSION" ] && options="-k"
-	    time ./Allwmake $options && touch $sentinel
+	    ./Allwmake $options && touch $sentinel
 	else
 	    echo "$WM_THIRD_PARTY_DIR is already built"
 	fi
-    )
+	)
 }
 
 build_OpenFOAM()
@@ -647,25 +717,18 @@ build_OpenFOAM()
     [ -n "$DOWNLOAD_ONLY" ] && return 0
 
     (cd $WM_PROJECT_DIR
-	local sentinel="DONE_BUILD_OPENFOAM_${COMPILER_TYPE}_${COMPILER}_${COMPILE_OPTION}_${PRECISION_OPTION}_${LABEL_SIZE}_${ARCH_OPTION}_${MPLIB}"
-
+	local sentinel="Allwmake-${foam_settings// /-}.done"
 	if [ ! -f $sentinel ];then
-	    . $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
+	    source $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
 	    if [ $WM_COMPILER_TYPE = "system" ]
 	    then
 		export GMP_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH/$GMP_PACKAGE
 		export MPFR_ARCH_PATH=$WM_THIRD_PARTY_DIR/platforms/$WM_ARCH/$MPFR_PACKAGE
 	    fi
 
-	    if [ -n "$BUILD_FOAMY_HEX_MESH" ];then
-		export FOAMY_HEX_MESH=yes
-	    else
-		unset FOAMY_HEX_MESH
-	    fi
-
 	    [ -n "$PLUS_VERSION" ] && options="-k"
-	    time ./Allwmake $options && touch $sentinel
-	else
+	    ./Allwmake $options && touch $sentinel
+ 	else
 	    echo "$WM_PROJECT_DIR is already built"
 	fi
     )
@@ -769,18 +832,14 @@ do
 done
 
 #- Source settings
-. etc/system
+source etc/system
 
 [ -f system/$SYSTEM/bashrc ] || error "system/$SYSTEM/bashrc does not exist"
-. system/$SYSTEM/bashrc
+source system/$SYSTEM/bashrc
 
 for OpenFOAM_BUILD_OPTION in ${OpenFOAM_BUILD_OPTION_LIST[@]}
 do
-    echo $OpenFOAM_BUILD_OPTION
-
-    #- Log file name
-    log=log.${OpenFOAM_BUILD_OPTION}
-
+(
     OpenFOAM_VERSION=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*OpenFOAM_VERSION=\([^,]*\).*$"/"\1"/`
     COMPILER_TYPE=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER_TYPE=\([^,]*\).*"/"\1"/`
     COMPILER=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*COMPILER=\([^,]*\).*"/"\1"/`
@@ -791,10 +850,7 @@ do
     MPLIB=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*MPLIB=\([^,]*\).*"/"\1"/`
     BUILD_PARAVIEW=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[,^]*BUILD_PARAVIEW=\([^,]*\).*"/"\1"/`
     [ "$BUILD_PARAVIEW" != "1" ] && unset BUILD_PARAVIEW
-    BUILD_FOAMY_HEX_MESH=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[^,]*BUILD_FOAMY_HEX_MESH=\([^,]*\).*$"/"\1"/`
-    [ "$BUILD_FOAMY_HEX_MESH" != "1" ] &&  unset BUILD_FOAMY_HEX_MESH
-    DOWNLOAD_ONLY=`echo $OpenFOAM_BUILD_OPTION | sed s/".*[^,]*DOWNLOAD_ONLY=\([^,]*\).*$"/"\1"/`
-    [ "$DOWNLOAD_ONLY" != "1" ] &&  unset DOWNLOAD_ONLY
+    [ -n "$BUILD_PARAVIEW" ] || echo "unset BUILD_PARAVIEW"
 
     case "$OpenFOAM_VERSION" in
 	OpenFOAM-v[0-9]*)
@@ -812,12 +868,12 @@ do
     esac
 
 #- Source function of download URL of software package
-    . etc/url
-    [ -f system/$SYSTEM/url ] && . system/$SYSTEM/url
+    source etc/url
+    [ -f system/$SYSTEM/url ] && source system/$SYSTEM/url
 
 #- Source function of package software version
-    . etc/version
-    [ -f system/$SYSTEM/version ] && . system/$SYSTEM/version
+    source etc/version
+    [ -f system/$SYSTEM/version ] && source system/$SYSTEM/version
 
 #- Compiler type and compiler
     COMPILER_WM_NAME=`echo $COMPILER | tr -d [:digit:]_`
@@ -840,7 +896,6 @@ do
 	mkdir $FOAM_INST_DIR  || \
 	error "Could not make $FOAM_INST_DIR" 
     
-    (
 #- Allwmake settings
 	foam_settings="\
 foamCompiler=$COMPILER_TYPE \
@@ -852,10 +907,12 @@ WM_LABEL_SIZE=$LABEL_SIZE \
 WM_ARCH_OPTION=$ARCH_OPTION \
 WM_MPLIB=$MPLIB\
 "
-	echo "Build $OpenFOAM_VERSION under $foam_settings"
+	echo
+	echo "================================================================================"
+	echo "Build $OpenFOAM_VERSION under $foam_settings, WM_NCOMPPROCS=$WM_NCOMPPROCS"
 
 #- Source compiler and MPI library settings
-	. system/$SYSTEM/settings
+	source system/$SYSTEM/settings
 	
 #- Directory
 	WM_PROJECT_DIR=$FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION
@@ -869,6 +926,7 @@ WM_MPLIB=$MPLIB\
 	    add_wmake_rules \
 	    build_CMake \
 	    build_Qt \
+	    build_zlib \
 	    build_Mesa \
 	    build_Python \
 	    download_CGAL \
@@ -885,12 +943,12 @@ WM_MPLIB=$MPLIB\
 	    $function 2>&1 || error "$function failed"
 
 	    if [ ! -n "$DOWNLOAD_ONLY" -a $function = "build_Gcc" ];then
-		. $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
+		source $FOAM_INST_DIR/OpenFOAM-$FOAM_VERSION/etc/bashrc $foam_settings
 		echo "Build using $WM_NCOMPPROCS processor(s)."
 	    fi
 
 	done
 	echo
 	echo "End"
-    ) > $log
+)
 done
