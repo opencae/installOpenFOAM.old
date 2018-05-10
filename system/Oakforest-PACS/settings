@@ -14,6 +14,7 @@ case $COMPILER_TYPE in
 		;;
 	    Icc*)
 		version=${COMPILER#Icc}
+		version=${version%KNL}
 		version=${version//_/.}
 		module load intel/$version
 		;;
