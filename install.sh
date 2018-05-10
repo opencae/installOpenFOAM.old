@@ -134,10 +134,14 @@ patch_source()
 	fi
     done
 
-    foamConfigurePathsOptions=""
+    foamConfigurePathsOptions="\
+            --scotchVersion $SCOTCH_PACKAGE \
+	    --paraviewVersion ${PARAVIEW_PACKAGE#ParaView-}"
+
     case "$FOAM_VERSION" in
 	v17*)
 	    foamConfigurePathsOptions="\
+$foamConfigurePathsOptions \
 -boost $BOOST_PACKAGE \
 -cgal $CGAL_PACKAGE \
 -cmake $CMAKE_PACKAGE \
@@ -159,10 +163,8 @@ $foamConfigurePathsOptions \
     esac
 
     (cd $WM_PROJECT_DIR
-	bin/tools/foamConfigurePaths \
-            --scotchVersion $SCOTCH_PACKAGE \
-	    --paraviewVersion ${PARAVIEW_PACKAGE#ParaView-}
-	)
+	bin/tools/foamConfigurePaths $foamConfigurePathsOptions
+    )
 }
 
 link_ThirdParty_package()
@@ -518,8 +520,8 @@ build_zlib()
 	[ -n "$DOWNLOAD_ONLY" ] && return 0
 
 	if [ ! -d $ARCH_PATH  ];then
-	    (cd $WM_THIRD_PARTY_DIR
-		./configure
+	    (cd $WM_THIRD_PARTY_DIR/$ZLIB_PACKAGE
+		./configure --prefix=$ARCH_PATH
 		make -j $WM_NCOMPPROCS && make install
 	    )
 	fi
@@ -660,15 +662,12 @@ build_ParaView()
 			local PYTHON_OPTION="-python-lib $PYTHON_ARCH_PATH/lib/libpython$PYTHON_MAJOR_VERSION.so"
     		    fi
 
-#-$QT_PACKAGE \
-#-mesa \
-#-verbose \
-		    makeParaViewOptions="$makeParaViewOptions \
--no-qt \
+		    makeParaViewOptions="\
 -cmake $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$CMAKE_PACKAGE \
 -qmake $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$QT_PACKAGE/bin/qmake \
 -mpi \
 -python $PYTHON_OPTION \
+-mesa \
 -mesa-include $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$MESA_PACKAGE/include \
 -mesa-lib $WM_THIRD_PARTY_DIR/platforms/$WM_ARCH$WM_COMPILER/$MESA_PACKAGE/lib/libOSMesa.so \
 "
